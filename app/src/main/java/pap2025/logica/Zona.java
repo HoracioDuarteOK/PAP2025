@@ -1,0 +1,9 @@
+package pap2025.logica;
+
+public enum Zona {
+    BIBLOTECA_CENTRAL,
+    SUCURSAL_ESTE,
+    SUCURSAL_OESTE,
+    BIBLOTECA_INFANTIL,
+    ARCHIVO_GENERAL
+}
