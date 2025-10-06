@@ -1,7 +1,7 @@
 package pap2025.web;
 
 import pap2025.persistencia.ConfiguracionBD;
-import pap2025.fabrica.Fabrica;
+//  // Eliminado
 import pap2025.interfaz.IControladorFachada;
 import pap2025.logica.Usuario;
 import pap2025.logica.Bibliotecario;
@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.UUID;
 import java.net.URLDecoder;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -38,6 +39,103 @@ import com.sun.net.httpserver.HttpServer;
 public class CompleteWebServer {
     
     private static IControladorFachada controlador;
+    
+    // Mapa para almacenar sesiones de usuarios autenticados
+    private static Map<String, Usuario> sesiones = new HashMap<>();
+    
+    // Método para obtener usuario de la sesión
+    private static Usuario getUsuarioFromSession(HttpExchange t) {
+        String cookieHeader = t.getRequestHeaders().getFirst("Cookie");
+        if (cookieHeader != null) {
+            String[] cookies = cookieHeader.split(";");
+            for (String cookie : cookies) {
+                String[] parts = cookie.trim().split("=");
+                if (parts.length == 2 && parts[0].equals("session")) {
+                    String sessionToken = parts[1];
+                    return sesiones.get(sessionToken);
+                }
+            }
+        }
+        return null;
+    }
+    
+    // Método para generar página base con Bootstrap
+    private static String generateBasePage(String title, String content) {
+        return "<!DOCTYPE html>" +
+            "<html lang=\"es\">" +
+            "<head>" +
+            "<meta charset=\"UTF-8\">" +
+            "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">" +
+            "<title>" + title + " - Biblioteca Comunitaria</title>" +
+            "<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css\" rel=\"stylesheet\">" +
+            "<link href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css\" rel=\"stylesheet\">" +
+            "<style>" +
+            "body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; font-size: 14px; }" +
+            ".card { box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: none; margin-bottom: 1rem; }" +
+            ".btn-primary { background: linear-gradient(45deg, #667eea, #764ba2); border: none; }" +
+            ".navbar-brand { font-weight: bold; font-size: 1.1rem; }" +
+            ".btn-action { margin: 1px; padding: 0.25rem 0.5rem; font-size: 0.8rem; }" +
+            ".status-badge { font-size: 0.75rem; padding: 0.25rem 0.5rem; }" +
+            ".table-responsive { border-radius: 0.375rem; overflow-x: auto; }" +
+            ".table { font-size: 0.875rem; margin-bottom: 0; }" +
+            ".table th, .table td { padding: 0.5rem 0.75rem; vertical-align: middle; }" +
+            ".form-control, .form-select { font-size: 0.875rem; }" +
+            ".btn { font-size: 0.875rem; padding: 0.5rem 1rem; }" +
+            ".btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }" +
+            ".modal-dialog { margin: 0.5rem; }" +
+            ".modal-content { border-radius: 0.5rem; }" +
+            ".stats-card { text-align: center; padding: 1rem; }" +
+            ".stats-number { font-size: 2rem; font-weight: bold; }" +
+            ".stats-label { font-size: 0.875rem; color: #6c757d; }" +
+            ".action-buttons { display: flex; flex-wrap: wrap; gap: 0.25rem; }" +
+            ".navbar-toggler { border: none; padding: 0.25rem 0.5rem; }" +
+            ".navbar-toggler:focus { box-shadow: none; }" +
+            "@media (max-width: 768px) {" +
+            ".container { padding-left: 0.75rem; padding-right: 0.75rem; }" +
+            ".navbar-brand { font-size: 1rem; }" +
+            ".btn { width: 100%; margin-bottom: 0.5rem; }" +
+            ".btn-action { width: auto; margin: 1px; }" +
+            ".table-responsive { font-size: 0.75rem; }" +
+            ".modal-dialog { margin: 0.25rem; max-width: calc(100% - 0.5rem); }" +
+            ".stats-number { font-size: 1.5rem; }" +
+            ".card-body { padding: 0.75rem; }" +
+            "}" +
+            "@media (max-width: 576px) {" +
+            ".container { padding-left: 0.5rem; padding-right: 0.5rem; }" +
+            ".navbar-brand { font-size: 0.9rem; }" +
+            ".table th, .table td { padding: 0.25rem 0.5rem; }" +
+            ".btn-sm { padding: 0.2rem 0.4rem; font-size: 0.7rem; }" +
+            ".modal-dialog { margin: 0.1rem; max-width: calc(100% - 0.2rem); }" +
+            ".stats-card { padding: 0.75rem; }" +
+            "}" +
+            "</style>" +
+            "</head>" +
+            "<body>" +
+            "<nav class=\"navbar navbar-expand-lg navbar-dark bg-dark\">" +
+            "<div class=\"container-fluid\">" +
+            "<a class=\"navbar-brand\" href=\"/\">" +
+            "<i class=\"fas fa-book\"></i> <span class=\"d-none d-sm-inline\">Biblioteca Comunitaria</span>" +
+            "</a>" +
+            "<button class=\"navbar-toggler\" type=\"button\" data-bs-toggle=\"collapse\" data-bs-target=\"#navbarNav\">" +
+            "<span class=\"navbar-toggler-icon\"></span>" +
+            "</button>" +
+            "<div class=\"collapse navbar-collapse\" id=\"navbarNav\">" +
+            "<div class=\"navbar-nav ms-auto\">" +
+            "<a class=\"nav-link\" href=\"/bibliotecario\">" +
+            "<i class=\"fas fa-home\"></i> <span class=\"d-none d-sm-inline\">Dashboard</span>" +
+            "</a>" +
+            "<a class=\"nav-link\" href=\"/logout\">" +
+            "<i class=\"fas fa-sign-out-alt\"></i> <span class=\"d-none d-sm-inline\">Cerrar Sesión</span>" +
+            "</a>" +
+            "</div>" +
+            "</div>" +
+            "</div>" +
+            "</nav>" +
+            content +
+            "<script src=\"https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js\"></script>" +
+            "</body>" +
+            "</html>";
+    }
     
     public static void main(String[] args) throws IOException {
         int port = args.length > 0 ? Integer.parseInt(args[0]) : 8080;
@@ -53,7 +151,7 @@ public class CompleteWebServer {
         System.out.println("✅ Conexión a la base de datos establecida");
         
         // Obtener controlador
-        controlador = Fabrica.getInstancia().getIControladorFachada();
+        controlador = pap2025.logica.ControladorFachada.getInstancia();
         
         // Crear servidor HTTP
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -89,6 +187,11 @@ public class CompleteWebServer {
         
         // Rutas para funcionalidades opcionales
         server.createContext("/bibliotecario/prestamos/por-lector", new PrestamosPorLectorHandler());
+        server.createContext("/bibliotecario/prestamos/activos", new PrestamosActivosHandler());
+        server.createContext("/bibliotecario/prestamos/editar", new EditarPrestamoHandler());
+        server.createContext("/bibliotecario/prestamos/activos-lector", new PrestamosActivosLectorHandler());
+        server.createContext("/bibliotecario/materiales/editar", new EditarMaterialHandler());
+        server.createContext("/bibliotecario/usuarios/editar", new EditarUsuarioHandler());
         server.createContext("/bibliotecario/reportes/por-zona", new ReportePorZonaHandler());
         server.createContext("/bibliotecario/reportes/materiales-populares", new MaterialesPopularesHandler());
         server.createContext("/bibliotecario/historial", new HistorialBibliotecarioHandler());
@@ -358,6 +461,11 @@ public class CompleteWebServer {
                         // En un sistema real, aquí se validaría el hash de la contraseña
                         System.out.println("✅ Usuario autenticado correctamente");
                         
+                        // Generar token de sesión
+                        String sessionToken = UUID.randomUUID().toString();
+                        sesiones.put(sessionToken, usuario);
+                        System.out.println("🔑 Token de sesión generado: " + sessionToken);
+                        
                         // Redirigir según tipo de usuario
                         String redirectUrl;
                         if (usuario instanceof Bibliotecario) {
@@ -368,8 +476,9 @@ public class CompleteWebServer {
                             System.out.println("👤 Redirigiendo a dashboard de lector");
                         }
                         
-                        // Enviar respuesta de redirección
+                        // Enviar respuesta de redirección con cookie de sesión
                         t.getResponseHeaders().set("Location", redirectUrl);
+                        t.getResponseHeaders().set("Set-Cookie", "session=" + sessionToken + "; Path=/; HttpOnly");
                         t.sendResponseHeaders(302, 0);
                         t.getResponseBody().close();
                         return;
@@ -461,6 +570,7 @@ public class CompleteWebServer {
                 "</html>";
         }
         
+        
         private String generateLoginErrorPage(String errorMessage) {
             return "<!DOCTYPE html>" +
                 "<html lang=\"es\">" +
@@ -527,7 +637,10 @@ public class CompleteWebServer {
                         // Cambiar estado: ACTIVO -> SUSPENDIDO, SUSPENDIDO -> ACTIVO
                         EstadoL nuevoEstado = lector.getEstadoL() == EstadoL.ACTIVO ? EstadoL.SUSPENDIDO : EstadoL.ACTIVO;
                         
+
+
                         // Persistir el cambio en la base de datos
+                        
                         boolean exito = controlador.modificarEstadoLector(email, nuevoEstado);
                         
                         String response = "Estado del lector " + lector.getNombre() + " cambiado a " + nuevoEstado;
@@ -548,9 +661,10 @@ public class CompleteWebServer {
                 }
             } else {
                 String response = "Método no permitido";
-                t.getResponseHeaders().set("Content-Type", "text/plain");
-                t.sendResponseHeaders(405, response.length());
-                t.getResponseBody().write(response.getBytes());
+                byte[] responseBytes = response.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                t.sendResponseHeaders(405, responseBytes.length);
+                t.getResponseBody().write(responseBytes);
             }
             t.getResponseBody().close();
         }
@@ -592,9 +706,10 @@ public class CompleteWebServer {
                 }
             } else {
                 String response = "Método no permitido";
-                t.getResponseHeaders().set("Content-Type", "text/plain");
-                t.sendResponseHeaders(405, response.length());
-                t.getResponseBody().write(response.getBytes());
+                byte[] responseBytes = response.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                t.sendResponseHeaders(405, responseBytes.length);
+                t.getResponseBody().write(responseBytes);
             }
             t.getResponseBody().close();
         }
@@ -626,27 +741,40 @@ public class CompleteWebServer {
                         EstadoP nuevoEstado = prestamo.getEstadoP() == EstadoP.ENCURSO ? EstadoP.DEVUELTO : EstadoP.ENCURSO;
                         prestamo.setEstadoP(nuevoEstado);
                         
+                        // Persistir el cambio en la base de datos
+                        controlador.actualizarEstadoPrestamo(id, nuevoEstado);
+                        
                         String response = "Estado del préstamo " + id + " cambiado a " + nuevoEstado;
-                        t.getResponseHeaders().set("Content-Type", "text/plain");
-                        t.sendResponseHeaders(200, response.length());
-                        t.getResponseBody().write(response.getBytes());
+                        byte[] responseBytes = response.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                        t.sendResponseHeaders(200, responseBytes.length);
+                        OutputStream os = t.getResponseBody();
+                        os.write(responseBytes);
+                        os.close();
                     } else {
                         String response = "Préstamo no encontrado";
-                        t.getResponseHeaders().set("Content-Type", "text/plain");
-                        t.sendResponseHeaders(400, response.length());
-                        t.getResponseBody().write(response.getBytes());
+                        byte[] responseBytes = response.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                        t.sendResponseHeaders(400, responseBytes.length);
+                        OutputStream os = t.getResponseBody();
+                        os.write(responseBytes);
+                        os.close();
                     }
                 } catch (Exception e) {
                     String response = "Error al cambiar estado del préstamo: " + e.getMessage();
-                    t.getResponseHeaders().set("Content-Type", "text/plain");
-                    t.sendResponseHeaders(500, response.length());
-                    t.getResponseBody().write(response.getBytes());
+                    byte[] responseBytes = response.getBytes("UTF-8");
+                    t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                    t.sendResponseHeaders(500, responseBytes.length);
+                    OutputStream os = t.getResponseBody();
+                    os.write(responseBytes);
+                    os.close();
                 }
             } else {
                 String response = "Método no permitido";
-                t.getResponseHeaders().set("Content-Type", "text/plain");
-                t.sendResponseHeaders(405, response.length());
-                t.getResponseBody().write(response.getBytes());
+                byte[] responseBytes = response.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                t.sendResponseHeaders(405, responseBytes.length);
+                t.getResponseBody().write(responseBytes);
             }
             t.getResponseBody().close();
         }
@@ -658,7 +786,7 @@ public class CompleteWebServer {
         public void handle(HttpExchange t) throws IOException {
             if ("GET".equals(t.getRequestMethod())) {
                 // Mostrar formulario para crear préstamo
-                List<Material> materiales = controlador.getListaMateriales();
+                List<Material> materiales = controlador.obtenerMaterialesDisponibles();
                 List<Bibliotecario> bibliotecarios = controlador.getListaBibliotecarios();
                 
                 StringBuilder materialesOptions = new StringBuilder();
@@ -721,6 +849,11 @@ public class CompleteWebServer {
                     bibliotecariosOptions.toString() +
                     "</select>" +
                     "</div>" +
+                    "<div class=\"mb-3\">" +
+                    "<label for=\"fechaDevolucion\" class=\"form-label\">Fecha de devolución:</label>" +
+                    "<input type=\"date\" class=\"form-control\" id=\"fechaDevolucion\" name=\"fechaDevolucion\" required min=\"" + java.time.LocalDate.now().plusDays(1).toString() + "\">" +
+                    "<div class=\"form-text\">La fecha debe ser al menos mañana.</div>" +
+                    "</div>" +
                     "<div class=\"d-grid gap-2\">" +
                     "<button type=\"submit\" class=\"btn btn-success\">Solicitar Préstamo</button>" +
                     "<a href=\"/lector\" class=\"btn btn-secondary\">Cancelar</a>" +
@@ -734,15 +867,17 @@ public class CompleteWebServer {
                     "</body>" +
                     "</html>";
                 
+                byte[] htmlBytes = html.getBytes("UTF-8");
                 t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-                t.sendResponseHeaders(200, html.length());
-                t.getResponseBody().write(html.getBytes());
+                t.sendResponseHeaders(200, htmlBytes.length);
+                t.getResponseBody().write(htmlBytes);
             } else if ("POST".equals(t.getRequestMethod())) {
                 // Procesar solicitud de préstamo
                 String body = new String(t.getRequestBody().readAllBytes());
                 Map<String, String> params = parseFormData(body);
                 String materialIdStr = params.get("material");
                 String bibliotecarioIdStr = params.get("bibliotecario");
+                String fechaDevolucionStr = params.get("fechaDevolucion");
                 
                 try {
                     int materialId = Integer.parseInt(materialIdStr);
@@ -768,43 +903,87 @@ public class CompleteWebServer {
                     }
                     
                     if (material != null && bibliotecario != null) {
-                        // Crear nuevo préstamo (por simplicidad, usamos el primer lector disponible)
-                        List<Lector> lectores = controlador.getListaLectores();
-                        if (!lectores.isEmpty()) {
-                            Lector lector = lectores.get(0); // En un sistema real, esto vendría de la sesión
+                        // Obtener el lector autenticado desde la sesión
+                        Usuario usuario = getUsuarioFromSession(t);
+                        
+                        if (usuario instanceof Lector) {
+                            Lector lector = (Lector) usuario;
                             
-                            DTFecha fechaActual = new DTFecha(4, 10, 2025); // Fecha actual simulada
-                            DTFecha fechaDevolucion = new DTFecha(18, 10, 2025); // 14 días después
+                            // Crear DTFecha a partir de la fecha enviada por el formulario
+                            DTFecha fechaDevolucion;
+                            if (fechaDevolucionStr != null && !fechaDevolucionStr.isEmpty()) {
+                                // Parsear fecha en formato YYYY-MM-DD
+                                String[] partes = fechaDevolucionStr.split("-");
+                                int anio = Integer.parseInt(partes[0]);
+                                int mes = Integer.parseInt(partes[1]);
+                                int dia = Integer.parseInt(partes[2]);
+                                fechaDevolucion = new DTFecha(dia, mes, anio);
+                                
+                                // Validar que la fecha de devolución sea futura
+                                LocalDate fechaHoy = LocalDate.now();
+                                LocalDate fechaDevolucionLocal = LocalDate.of(anio, mes, dia);
+                                if (fechaDevolucionLocal.isBefore(fechaHoy.plusDays(1))) {
+                                    String response = "La fecha de devolución debe ser al menos mañana";
+                                    byte[] responseBytes = response.getBytes("UTF-8");
+                                    t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                                    t.sendResponseHeaders(400, responseBytes.length);
+                                    t.getResponseBody().write(responseBytes);
+                                    return;
+                                }
+                            } else {
+                                // Fecha por defecto si no se especifica
+                                fechaDevolucion = new DTFecha(18, 10, 2025);
+                            }
                             
-                            Prestamo nuevoPrestamo = new Prestamo(0, material, lector, bibliotecario, fechaActual, fechaDevolucion, EstadoP.ENCURSO);
+                            // Usar el método del controlador para crear y persistir el préstamo
+                            Integer idPrestamo = controlador.crearPrestamo(material, lector, bibliotecario, fechaDevolucion);
                             
-                            String response = "Préstamo solicitado exitosamente. ID: " + nuevoPrestamo.getId();
-                            t.getResponseHeaders().set("Content-Type", "text/plain");
-                            t.sendResponseHeaders(200, response.length());
-                            t.getResponseBody().write(response.getBytes());
+                            if (idPrestamo != null) {
+                                String response = "Préstamo solicitado exitosamente. ID: " + idPrestamo;
+                                byte[] responseBytes = response.getBytes("UTF-8");
+                                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                                t.sendResponseHeaders(200, responseBytes.length);
+                                t.getResponseBody().write(responseBytes);
+                            } else {
+                                String response = "Error al crear el préstamo";
+                                byte[] responseBytes = response.getBytes("UTF-8");
+                                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                                t.sendResponseHeaders(500, responseBytes.length);
+                                t.getResponseBody().write(responseBytes);
+                            }
+                        } else if (usuario == null) {
+                            String response = "Debe iniciar sesión para solicitar préstamos";
+                            byte[] responseBytes = response.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                            t.sendResponseHeaders(401, responseBytes.length);
+                            t.getResponseBody().write(responseBytes);
                         } else {
-                            String response = "No hay lectores disponibles";
-                            t.getResponseHeaders().set("Content-Type", "text/plain");
-                            t.sendResponseHeaders(400, response.length());
-                            t.getResponseBody().write(response.getBytes());
+                            String response = "Solo los lectores pueden solicitar préstamos";
+                            byte[] responseBytes = response.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                            t.sendResponseHeaders(403, responseBytes.length);
+                            t.getResponseBody().write(responseBytes);
                         }
                     } else {
                         String response = "Material o bibliotecario no encontrado";
-                        t.getResponseHeaders().set("Content-Type", "text/plain");
-                        t.sendResponseHeaders(400, response.length());
-                        t.getResponseBody().write(response.getBytes());
+                        byte[] responseBytes = response.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                        t.sendResponseHeaders(400, responseBytes.length);
+                        t.getResponseBody().write(responseBytes);
                     }
                 } catch (Exception e) {
                     String response = "Error al crear préstamo: " + e.getMessage();
-                    t.getResponseHeaders().set("Content-Type", "text/plain");
-                    t.sendResponseHeaders(500, response.length());
-                    t.getResponseBody().write(response.getBytes());
+                    byte[] responseBytes = response.getBytes("UTF-8");
+                    t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                    t.sendResponseHeaders(500, responseBytes.length);
+                    t.getResponseBody().write(responseBytes);
                 }
             } else {
                 String response = "Método no permitido";
-                t.getResponseHeaders().set("Content-Type", "text/plain");
-                t.sendResponseHeaders(405, response.length());
-                t.getResponseBody().write(response.getBytes());
+                byte[] responseBytes = response.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                t.sendResponseHeaders(405, responseBytes.length);
+                t.getResponseBody().write(responseBytes);
             }
             t.getResponseBody().close();
         }
@@ -887,9 +1066,10 @@ public class CompleteWebServer {
                     "</body>" +
                     "</html>";
                 
+                byte[] htmlBytes = html.getBytes("UTF-8");
                 t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-                t.sendResponseHeaders(200, html.length());
-                t.getResponseBody().write(html.getBytes());
+                t.sendResponseHeaders(200, htmlBytes.length);
+                t.getResponseBody().write(htmlBytes);
             } else if ("POST".equals(t.getRequestMethod())) {
                 String body = new String(t.getRequestBody().readAllBytes());
                 Map<String, String> params = parseFormData(body);
@@ -990,28 +1170,210 @@ public class CompleteWebServer {
                             "</body>" +
                             "</html>";
                         
+                        byte[] htmlBytes = html.getBytes("UTF-8");
                         t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-                        t.sendResponseHeaders(200, html.length());
-                        t.getResponseBody().write(html.getBytes());
+                        t.sendResponseHeaders(200, htmlBytes.length);
+                        OutputStream os = t.getResponseBody();
+                        os.write(htmlBytes);
+                        os.close();
                     } else {
                         String response = "Lector no encontrado";
-                        t.getResponseHeaders().set("Content-Type", "text/plain");
-                        t.sendResponseHeaders(400, response.length());
-                        t.getResponseBody().write(response.getBytes());
+                        byte[] responseBytes = response.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                        t.sendResponseHeaders(400, responseBytes.length);
+                        OutputStream os = t.getResponseBody();
+                        os.write(responseBytes);
+                        os.close();
                     }
                 } catch (Exception e) {
                     String response = "Error al obtener préstamos: " + e.getMessage();
-                    t.getResponseHeaders().set("Content-Type", "text/plain");
-                    t.sendResponseHeaders(500, response.length());
-                    t.getResponseBody().write(response.getBytes());
+                    byte[] responseBytes = response.getBytes("UTF-8");
+                    t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                    t.sendResponseHeaders(500, responseBytes.length);
+                    OutputStream os = t.getResponseBody();
+                    os.write(responseBytes);
+                    os.close();
                 }
             } else {
                 String response = "Método no permitido";
-                t.getResponseHeaders().set("Content-Type", "text/plain");
-                t.sendResponseHeaders(405, response.length());
-                t.getResponseBody().write(response.getBytes());
+                byte[] responseBytes = response.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                t.sendResponseHeaders(405, responseBytes.length);
+                t.getResponseBody().write(responseBytes);
             }
             t.getResponseBody().close();
+        }
+    }
+    
+    // Handler para listar préstamos activos de un lector específico
+    static class PrestamosActivosLectorHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            try {
+                if ("GET".equals(t.getRequestMethod())) {
+                    // Mostrar formulario para seleccionar lector
+                    String query = t.getRequestURI().getQuery();
+                    if (query != null && query.contains("lector=")) {
+                        String emailLector = query.substring(query.indexOf("lector=") + 7);
+                        emailLector = java.net.URLDecoder.decode(emailLector, "UTF-8");
+                        
+                        Usuario usuario = controlador.obtenerUsuario(emailLector);
+                        if (usuario != null && usuario instanceof Lector) {
+                            Lector lector = (Lector) usuario;
+                            String html = generatePrestamosActivosLectorPage(lector);
+                            byte[] response = html.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                            t.sendResponseHeaders(200, response.length);
+                            t.getResponseBody().write(response);
+                        } else {
+                            String html = CompleteWebServer.generateBasePage("Error", "<div class=\"alert alert-danger\">Lector no encontrado</div>");
+                            byte[] response = html.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                            t.sendResponseHeaders(404, response.length);
+                            t.getResponseBody().write(response);
+                        }
+                    } else {
+                        // Mostrar formulario para seleccionar lector
+                        String html = generateSelectLectorPage();
+                        byte[] response = html.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                        t.sendResponseHeaders(200, response.length);
+                        t.getResponseBody().write(response);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                String html = CompleteWebServer.generateBasePage("Error", "<div class=\"alert alert-danger\">Error al procesar la solicitud: " + e.getMessage() + "</div>");
+                byte[] response = html.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                t.sendResponseHeaders(500, response.length);
+                t.getResponseBody().write(response);
+            } finally {
+                t.getResponseBody().close();
+            }
+        }
+        
+        private String generateSelectLectorPage() {
+            List<Lector> lectores = controlador.getListaLectores();
+            
+            StringBuilder lectoresHtml = new StringBuilder();
+            for (Lector lector : lectores) {
+                lectoresHtml.append("<option value=\"").append(lector.getEmail()).append("\">")
+                    .append(lector.getNombre()).append(" (").append(lector.getEmail()).append(")</option>");
+            }
+            
+            return CompleteWebServer.generateBasePage("Préstamos Activos por Lector", 
+                "<div class=\"container mt-4\">" +
+                "<h2><i class=\"fas fa-user-clock\"></i> Préstamos Activos por Lector</h2>" +
+                "<p class=\"text-muted\">Selecciona un lector para ver sus préstamos activos.</p>" +
+                "<div class=\"card\">" +
+                "<div class=\"card-body\">" +
+                "<form method=\"GET\" action=\"/bibliotecario/prestamos/activos-lector\">" +
+                "<div class=\"mb-3\">" +
+                "<label for=\"lector\" class=\"form-label\">Seleccionar Lector:</label>" +
+                "<select class=\"form-select\" id=\"lector\" name=\"lector\" required>" +
+                "<option value=\"\">-- Selecciona un lector --</option>" +
+                lectoresHtml.toString() +
+                "</select>" +
+                "</div>" +
+                "<div class=\"d-flex gap-2\">" +
+                "<button type=\"submit\" class=\"btn btn-primary\"><i class=\"fas fa-search\"></i> Ver Préstamos Activos</button>" +
+                "<a href=\"/bibliotecario/prestamos\" class=\"btn btn-secondary\"><i class=\"fas fa-arrow-left\"></i> Volver</a>" +
+                "</div>" +
+                "</form>" +
+                "</div>" +
+                "</div>" +
+                "</div>");
+        }
+        
+        private String generatePrestamosActivosLectorPage(Lector lector) {
+            List<Prestamo> todosLosPrestamos = controlador.getListaPrestamos();
+            List<Prestamo> prestamosActivos = new ArrayList<>();
+            
+            // Filtrar préstamos activos del lector
+            for (Prestamo prestamo : todosLosPrestamos) {
+                if (prestamo.getLector().getId().equals(lector.getId()) && 
+                    prestamo.getEstadoP() == EstadoP.ENCURSO) {
+                    prestamosActivos.add(prestamo);
+                }
+            }
+            
+            StringBuilder prestamosHtml = new StringBuilder();
+            if (prestamosActivos.isEmpty()) {
+                prestamosHtml.append("<tr><td colspan=\"6\" class=\"text-center text-muted\">No tiene préstamos activos</td></tr>");
+            } else {
+                for (Prestamo prestamo : prestamosActivos) {
+                    Material material = prestamo.getMaterial();
+                    String materialNombre = "";
+                    if (material instanceof Libro) {
+                        materialNombre = ((Libro) material).getTitulo();
+                    } else if (material instanceof ArtEspeciales) {
+                        materialNombre = ((ArtEspeciales) material).getDescripcion();
+                    }
+                    
+                    prestamosHtml.append("<tr>")
+                        .append("<td>").append(prestamo.getId()).append("</td>")
+                        .append("<td>").append(materialNombre).append("</td>")
+                        .append("<td>").append(prestamo.getBibliotecario().getNombre()).append("</td>")
+                        .append("<td>").append(prestamo.getFechaSolicitada()).append("</td>")
+                        .append("<td>").append(prestamo.getFechaDevolucion()).append("</td>")
+                        .append("<td><span class=\"badge bg-warning\">").append(prestamo.getEstadoP()).append("</span></td>")
+                        .append("</tr>");
+                }
+            }
+            
+            return CompleteWebServer.generateBasePage("Préstamos Activos de " + lector.getNombre(), 
+                "<div class=\"container mt-4\">" +
+                "<h2><i class=\"fas fa-user-clock\"></i> Préstamos Activos de " + lector.getNombre() + "</h2>" +
+                "<div class=\"row mb-3\">" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"card bg-info text-white\">" +
+                "<div class=\"card-body\">" +
+                "<h5 class=\"card-title\"><i class=\"fas fa-user\"></i> Información del Lector</h5>" +
+                "<p class=\"mb-1\"><strong>Nombre:</strong> " + lector.getNombre() + "</p>" +
+                "<p class=\"mb-1\"><strong>Email:</strong> " + lector.getEmail() + "</p>" +
+                "<p class=\"mb-0\"><strong>Zona:</strong> " + lector.getZona() + "</p>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"card bg-primary text-white\">" +
+                "<div class=\"card-body\">" +
+                "<h5 class=\"card-title\"><i class=\"fas fa-book\"></i> Resumen</h5>" +
+                "<p class=\"mb-0\"><strong>Préstamos Activos:</strong> " + prestamosActivos.size() + "</p>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"card\">" +
+                "<div class=\"card-header\">" +
+                "<h5 class=\"mb-0\"><i class=\"fas fa-list\"></i> Lista de Préstamos Activos</h5>" +
+                "</div>" +
+                "<div class=\"card-body\">" +
+                "<div class=\"table-responsive\">" +
+                "<table class=\"table table-striped\">" +
+                "<thead>" +
+                "<tr>" +
+                "<th>ID Préstamo</th>" +
+                "<th>Material</th>" +
+                "<th>Bibliotecario</th>" +
+                "<th>Fecha Solicitud</th>" +
+                "<th>Fecha Devolución</th>" +
+                "<th>Estado</th>" +
+                "</tr>" +
+                "</thead>" +
+                "<tbody>" +
+                prestamosHtml.toString() +
+                "</tbody>" +
+                "</table>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"mt-3\">" +
+                "<a href=\"/bibliotecario/prestamos/activos-lector\" class=\"btn btn-secondary\"><i class=\"fas fa-arrow-left\"></i> Seleccionar Otro Lector</a>" +
+                "<a href=\"/bibliotecario/prestamos\" class=\"btn btn-primary ms-2\"><i class=\"fas fa-list\"></i> Ver Todos los Préstamos</a>" +
+                "</div>" +
+                "</div>");
         }
     }
     
@@ -1357,9 +1719,11 @@ public class CompleteWebServer {
                     "</body>" +
                     "</html>";
                 
+                byte[] htmlBytes = html.getBytes("UTF-8");
                 t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-                t.sendResponseHeaders(200, html.length());
-                t.getResponseBody().write(html.getBytes());
+                t.sendResponseHeaders(200, htmlBytes.length);
+                t.getResponseBody().write(htmlBytes);
+                t.getResponseBody().close();
             } else if ("POST".equals(t.getRequestMethod())) {
                 String body = new String(t.getRequestBody().readAllBytes());
                 Map<String, String> params = parseFormData(body);
@@ -1367,15 +1731,24 @@ public class CompleteWebServer {
                 String fechaFin = params.get("fechaFin");
                 
                 try {
-                    List<Material> materiales = controlador.getListaMateriales();
-                    List<Material> materialesFiltrados = new ArrayList<>();
+                    // Parsear fechas del formulario
+                    String[] fechaInicioParts = fechaInicio.split("-");
+                    String[] fechaFinParts = fechaFin.split("-");
                     
-                    // Simulación de filtrado por fecha (en un sistema real se compararían las fechas)
-                    for (Material material : materiales) {
-                        // Por simplicidad, mostramos todos los materiales
-                        // En un sistema real se compararían las fechas de ingreso
-                        materialesFiltrados.add(material);
-                    }
+                    DTFecha fechaInicioDT = new DTFecha(
+                        Integer.parseInt(fechaInicioParts[2]), // día
+                        Integer.parseInt(fechaInicioParts[1]), // mes
+                        Integer.parseInt(fechaInicioParts[0])  // año
+                    );
+                    
+                    DTFecha fechaFinDT = new DTFecha(
+                        Integer.parseInt(fechaFinParts[2]), // día
+                        Integer.parseInt(fechaFinParts[1]), // mes
+                        Integer.parseInt(fechaFinParts[0])  // año
+                    );
+                    
+                    // Obtener materiales filtrados por fecha
+                    List<Material> materialesFiltrados = controlador.obtenerDonacionesEnRango(fechaInicioDT, fechaFinDT);
                     
                     StringBuilder materialesHtml = new StringBuilder();
                     for (Material material : materialesFiltrados) {
@@ -1452,20 +1825,23 @@ public class CompleteWebServer {
                         "</body>" +
                         "</html>";
                     
+                    byte[] htmlBytes = html.getBytes("UTF-8");
                     t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-                    t.sendResponseHeaders(200, html.length());
-                    t.getResponseBody().write(html.getBytes());
+                    t.sendResponseHeaders(200, htmlBytes.length);
+                    t.getResponseBody().write(htmlBytes);
                 } catch (Exception e) {
                     String response = "Error al filtrar materiales: " + e.getMessage();
-                    t.getResponseHeaders().set("Content-Type", "text/plain");
-                    t.sendResponseHeaders(500, response.length());
-                    t.getResponseBody().write(response.getBytes());
+                    byte[] responseBytes = response.getBytes("UTF-8");
+                    t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                    t.sendResponseHeaders(500, responseBytes.length);
+                    t.getResponseBody().write(responseBytes);
                 }
             } else {
                 String response = "Método no permitido";
-                t.getResponseHeaders().set("Content-Type", "text/plain");
-                t.sendResponseHeaders(405, response.length());
-                t.getResponseBody().write(response.getBytes());
+                byte[] responseBytes = response.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                t.sendResponseHeaders(405, responseBytes.length);
+                t.getResponseBody().write(responseBytes);
             }
             t.getResponseBody().close();
         }
@@ -1475,7 +1851,24 @@ public class CompleteWebServer {
     static class LogoutHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
+            // Limpiar sesión
+            String cookieHeader = t.getRequestHeaders().getFirst("Cookie");
+            if (cookieHeader != null) {
+                String[] cookies = cookieHeader.split(";");
+                for (String cookie : cookies) {
+                    String[] parts = cookie.trim().split("=");
+                    if (parts.length == 2 && parts[0].equals("session")) {
+                        String sessionToken = parts[1];
+                        sesiones.remove(sessionToken);
+                        System.out.println("🔓 Sesión cerrada para token: " + sessionToken);
+                        break;
+                    }
+                }
+            }
+            
+            // Redirigir al login y limpiar cookie
             t.getResponseHeaders().set("Location", "/");
+            t.getResponseHeaders().set("Set-Cookie", "session=; Path=/; HttpOnly; Max-Age=0");
             t.sendResponseHeaders(302, 0);
             t.getResponseBody().close();
         }
@@ -1572,8 +1965,8 @@ public class CompleteWebServer {
                 "</div>" +
                 "</div>" +
                 "<div class=\"row\">" +
-                "<div class=\"col-md-4\">" +
-                "<div class=\"card\">" +
+                "<div class=\"col-12 col-md-4 mb-3\">" +
+                "<div class=\"card h-100\">" +
                 "<div class=\"card-header bg-primary text-white\">" +
                 "<h5 class=\"mb-0\">👥 Gestión de Usuarios</h5>" +
                 "</div>" +
@@ -1586,8 +1979,8 @@ public class CompleteWebServer {
                 "</div>" +
                 "</div>" +
                 "</div>" +
-                "<div class=\"col-md-4\">" +
-                "<div class=\"card\">" +
+                "<div class=\"col-12 col-md-4 mb-3\">" +
+                "<div class=\"card h-100\">" +
                 "<div class=\"card-header bg-success text-white\">" +
                 "<h5 class=\"mb-0\">📚 Gestión de Materiales</h5>" +
                 "</div>" +
@@ -1601,8 +1994,8 @@ public class CompleteWebServer {
                 "</div>" +
                 "</div>" +
                 "</div>" +
-                "<div class=\"col-md-4\">" +
-                "<div class=\"card\">" +
+                "<div class=\"col-12 col-md-4 mb-3\">" +
+                "<div class=\"card h-100\">" +
                 "<div class=\"card-header bg-warning text-white\">" +
                 "<h5 class=\"mb-0\">🔄 Gestión de Préstamos</h5>" +
                 "</div>" +
@@ -1610,8 +2003,12 @@ public class CompleteWebServer {
                 "<p>Gestionar préstamos y devoluciones</p>" +
                 "<div class=\"d-grid gap-2\">" +
                 "<a href=\"/bibliotecario/prestamos\" class=\"btn btn-warning\">Ver Préstamos</a>" +
-                "<a href=\"/bibliotecario/prestamos/nuevo\" class=\"btn btn-outline-warning\">Nuevo Préstamo</a>" +
+                "<a href=\"/bibliotecario/prestamos/activos\" class=\"btn btn-outline-warning\">Préstamos Activos</a>" +
                 "<a href=\"/bibliotecario/prestamos/por-lector\" class=\"btn btn-outline-info\">Préstamos por Lector</a>" +
+                "<a href=\"/bibliotecario/prestamos/editar\" class=\"btn btn-outline-primary\">Editar Préstamo</a>" +
+                "<a href=\"/bibliotecario/prestamos/activos-lector\" class=\"btn btn-outline-success\">Activos por Lector</a>" +
+                "<a href=\"/bibliotecario/materiales/editar\" class=\"btn btn-outline-warning\">Editar Material</a>" +
+                "<a href=\"/bibliotecario/usuarios/editar\" class=\"btn btn-outline-secondary\">Editar Usuario</a>" +
                 "</div>" +
                 "</div>" +
                 "</div>" +
@@ -1748,8 +2145,10 @@ public class CompleteWebServer {
                     .append("<td><span class=\"badge bg-").append(lector.getEstadoL() == EstadoL.ACTIVO ? "success" : "danger").append("\">")
                     .append(lector.getEstadoL()).append("</span></td>")
                     .append("<td>")
-                    .append("<button class=\"btn btn-sm btn-warning\" onclick=\"cambiarEstado('").append(lector.getEmail()).append("')\">Cambiar Estado</button> ")
-                    .append("<button class=\"btn btn-sm btn-info\" onclick=\"cambiarZona('").append(lector.getEmail()).append("')\">Cambiar Zona</button>")
+                    .append("<div class=\"action-buttons\">")
+                    .append("<button class=\"btn btn-sm btn-warning\" onclick=\"cambiarEstado('").append(lector.getEmail()).append("')\">Estado</button>")
+                    .append("<button class=\"btn btn-sm btn-info\" onclick=\"cambiarZona('").append(lector.getEmail()).append("')\">Zona</button>")
+                    .append("</div>")
                     .append("</td>")
                     .append("</tr>");
             }
@@ -1762,7 +2161,9 @@ public class CompleteWebServer {
                     .append("<td>").append(bibliotecario.getNroEmpleado()).append("</td>")
                     .append("<td><span class=\"badge bg-success\">Activo</span></td>")
                     .append("<td>")
+                    .append("<div class=\"action-buttons\">")
                     .append("<button class=\"btn btn-sm btn-primary\" onclick=\"editarBibliotecario('").append(bibliotecario.getEmail()).append("')\">Editar</button>")
+                    .append("</div>")
                     .append("</td>")
                     .append("</tr>");
             }
@@ -1871,22 +2272,76 @@ public class CompleteWebServer {
                 "    }" +
                 "}" +
                 "function cambiarZona(email) {" +
-                "    const zonas = ['BIBLOTECA_CENTRAL', 'SUCURSAL_ESTE', 'SUCURSAL_OESTE', 'BIBLOTECA_INFANTIL', 'ARCHIVO_GENERAL'];" +
-                "    const nuevaZona = prompt('Nueva zona para ' + email + ':\\n\\nZonas disponibles:\\n' + zonas.join('\\n'));" +
-                "    if (nuevaZona && zonas.includes(nuevaZona)) {" +
-                "        fetch('/bibliotecario/usuarios/cambiar-zona', {" +
-                "            method: 'POST'," +
-                "            headers: {'Content-Type': 'application/x-www-form-urlencoded'}," +
-                "            body: 'email=' + encodeURIComponent(email) + '&zona=' + encodeURIComponent(nuevaZona)" +
-                "        }).then(response => response.text()).then(data => {" +
-                "            alert('Zona cambiada exitosamente');" +
-                "            location.reload();" +
-                "        }).catch(error => {" +
-                "            alert('Error al cambiar zona: ' + error);" +
-                "        });" +
-                "    } else if (nuevaZona) {" +
-                "        alert('Zona inválida. Zonas disponibles: ' + zonas.join(', '));" +
+                "    // Crear modal dinámico para seleccionar zona" +
+                "    const modalHtml = `" +
+                "        <div class='modal fade' id='zonaModal' tabindex='-1'>" +
+                "            <div class='modal-dialog'>" +
+                "                <div class='modal-content'>" +
+                "                    <div class='modal-header'>" +
+                "                        <h5 class='modal-title'>Cambiar Zona del Lector</h5>" +
+                "                        <button type='button' class='btn-close' data-bs-dismiss='modal'></button>" +
+                "                    </div>" +
+                "                    <div class='modal-body'>" +
+                "                        <p>Selecciona la nueva zona para <strong>\" + email + \"</strong>:</p>" +
+                "                        <select class='form-select' id='nuevaZonaSelect'>" +
+                "                            <option value=''>Selecciona una zona...</option>" +
+                "                            <option value='BIBLOTECA_CENTRAL'>Biblioteca Central</option>" +
+                "                            <option value='SUCURSAL_ESTE'>Sucursal Este</option>" +
+                "                            <option value='SUCURSAL_OESTE'>Sucursal Oeste</option>" +
+                "                            <option value='BIBLOTECA_INFANTIL'>Biblioteca Infantil</option>" +
+                "                            <option value='ARCHIVO_GENERAL'>Archivo General</option>" +
+                "                        </select>" +
+                "                    </div>" +
+                "                    <div class='modal-footer'>" +
+                "                        <button type='button' class='btn btn-secondary' data-bs-dismiss='modal'>Cancelar</button>" +
+                "                        <button type='button' class='btn btn-primary' onclick='confirmarCambioZona()'>Cambiar Zona</button>" +
+                "                    </div>" +
+                "                </div>" +
+                "            </div>" +
+                "        </div>" +
+                "    `;" +
+                "    " +
+                "    // Remover modal anterior si existe" +
+                "    const modalAnterior = document.getElementById('zonaModal');" +
+                "    if (modalAnterior) {" +
+                "        modalAnterior.remove();" +
                 "    }" +
+                "    " +
+                "    // Agregar modal al body" +
+                "    document.body.insertAdjacentHTML('beforeend', modalHtml);" +
+                "    " +
+                "    // Mostrar modal" +
+                "    const modal = new bootstrap.Modal(document.getElementById('zonaModal'));" +
+                "    modal.show();" +
+                "    " +
+                "    // Almacenar email para uso posterior" +
+                "    window.lectorEmailActual = email;" +
+                "    " +
+                "    // Limpiar modal cuando se cierre" +
+                "    document.getElementById('zonaModal').addEventListener('hidden.bs.modal', function() {" +
+                "        this.remove();" +
+                "    });" +
+                "}" +
+                "" +
+                "function confirmarCambioZona() {" +
+                "    const nuevaZona = document.getElementById('nuevaZonaSelect').value;" +
+                "    const email = window.lectorEmailActual;" +
+                "    " +
+                "    if (!nuevaZona) {" +
+                "        alert('Por favor selecciona una zona.');" +
+                "        return;" +
+                "    }" +
+                "    " +
+                "    fetch('/bibliotecario/usuarios/cambiar-zona', {" +
+                "        method: 'POST'," +
+                "        headers: {'Content-Type': 'application/x-www-form-urlencoded'}," +
+                "        body: 'email=' + encodeURIComponent(email) + '&zona=' + encodeURIComponent(nuevaZona)" +
+                "    }).then(response => response.text()).then(data => {" +
+                "        alert('Zona cambiada exitosamente');" +
+                "        location.reload();" +
+                "    }).catch(error => {" +
+                "        alert('Error al cambiar zona: ' + error);" +
+                "    });" +
                 "}" +
                 "function editarBibliotecario(email) {" +
                 "    alert('Funcionalidad de edición en desarrollo para: ' + email);" +
@@ -1945,13 +2400,13 @@ public class CompleteWebServer {
                 "<div class=\"card-body\">" +
                 "<form>" +
                 "<div class=\"row\">" +
-                "<div class=\"col-md-6\">" +
+                "<div class=\"col-12 col-md-6 mb-3\">" +
                 "<div class=\"mb-3\">" +
                 "<label for=\"nombre\" class=\"form-label\">Nombre Completo</label>" +
                 "<input type=\"text\" class=\"form-control\" id=\"nombre\" required>" +
                 "</div>" +
                 "</div>" +
-                "<div class=\"col-md-6\">" +
+                "<div class=\"col-12 col-md-6 mb-3\">" +
                 "<div class=\"mb-3\">" +
                 "<label for=\"email\" class=\"form-label\">Email</label>" +
                 "<input type=\"email\" class=\"form-control\" id=\"email\" required>" +
@@ -2041,31 +2496,47 @@ public class CompleteWebServer {
             
             StringBuilder librosHtml = new StringBuilder();
             for (Libro libro : libros) {
+                // Verificar si el material está disponible
+                boolean disponible = controlador.estaMaterialDisponible(libro);
+                String estadoBadge = disponible ? 
+                    "<span class=\"badge bg-success\">Disponible</span>" : 
+                    "<span class=\"badge bg-warning\">En préstamo</span>";
+                
                 librosHtml.append("<tr>")
                     .append("<td>").append(libro.getId()).append("</td>")
                     .append("<td>").append(libro.getTitulo()).append("</td>")
                     .append("<td>").append(libro.getCantPaginas()).append(" páginas</td>")
                     .append("<td>").append(libro.getFechaIngreso()).append("</td>")
-                    .append("<td><span class=\"badge bg-success\">Disponible</span></td>")
+                    .append("<td>").append(estadoBadge).append("</td>")
                     .append("<td>")
-                    .append("<button class=\"btn btn-sm btn-primary\" onclick=\"editarLibro(").append(libro.getId()).append(")\">Editar</button> ")
+                    .append("<div class=\"action-buttons\">")
+                    .append("<button class=\"btn btn-sm btn-primary\" onclick=\"editarLibro(").append(libro.getId()).append(")\">Editar</button>")
                     .append("<button class=\"btn btn-sm btn-danger\" onclick=\"eliminarLibro(").append(libro.getId()).append(")\">Eliminar</button>")
+                    .append("</div>")
                     .append("</td>")
                     .append("</tr>");
             }
             
             StringBuilder artEspecialesHtml = new StringBuilder();
             for (ArtEspeciales art : artEspeciales) {
+                // Verificar si el material está disponible
+                boolean disponible = controlador.estaMaterialDisponible(art);
+                String estadoBadge = disponible ? 
+                    "<span class=\"badge bg-success\">Disponible</span>" : 
+                    "<span class=\"badge bg-warning\">En préstamo</span>";
+                
                 artEspecialesHtml.append("<tr>")
                     .append("<td>").append(art.getId()).append("</td>")
                     .append("<td>").append(art.getDescripcion()).append("</td>")
                     .append("<td>").append(art.getPeso()).append(" kg</td>")
                     .append("<td>").append(art.getDimensiones().getAncho()).append("x").append(art.getDimensiones().getAlto()).append("x").append(art.getDimensiones().getProfundidad()).append(" cm</td>")
                     .append("<td>").append(art.getFechaIngreso()).append("</td>")
-                    .append("<td><span class=\"badge bg-success\">Disponible</span></td>")
+                    .append("<td>").append(estadoBadge).append("</td>")
                     .append("<td>")
-                    .append("<button class=\"btn btn-sm btn-primary\" onclick=\"editarArtEspecial(").append(art.getId()).append(")\">Editar</button> ")
+                    .append("<div class=\"action-buttons\">")
+                    .append("<button class=\"btn btn-sm btn-primary\" onclick=\"editarArtEspecial(").append(art.getId()).append(")\">Editar</button>")
                     .append("<button class=\"btn btn-sm btn-danger\" onclick=\"eliminarArtEspecial(").append(art.getId()).append(")\">Eliminar</button>")
+                    .append("</div>")
                     .append("</td>")
                     .append("</tr>");
             }
@@ -2187,69 +2658,64 @@ public class CompleteWebServer {
     static class GestionPrestamosHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            String response = generateGestionPrestamosPage();
-            t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
-            t.sendResponseHeaders(200, response.getBytes().length);
-            OutputStream os = t.getResponseBody();
-            os.write(response.getBytes());
-            os.close();
+            try {
+                String response = generateGestionPrestamosPage();
+                byte[] responseBytes = response.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                t.sendResponseHeaders(200, responseBytes.length);
+                OutputStream os = t.getResponseBody();
+                os.write(responseBytes);
+                os.close();
+            } catch (Exception e) {
+                System.err.println("Error en GestionPrestamosHandler: " + e.getMessage());
+                e.printStackTrace();
+                String errorResponse = "Error interno del servidor: " + e.getMessage();
+                byte[] errorBytes = errorResponse.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                t.sendResponseHeaders(500, errorBytes.length);
+                OutputStream os = t.getResponseBody();
+                os.write(errorBytes);
+                os.close();
+            }
         }
         
         private String generateGestionPrestamosPage() {
-            // Obtener listas para los combos
-            List<Material> materialesDisponibles = controlador.obtenerMaterialesDisponibles();
-            List<Lector> lectoresActivos = controlador.obtenerLectoresPorEstado(EstadoL.ACTIVO);
-            List<Bibliotecario> bibliotecarios = controlador.getListaBibliotecarios();
+            // Obtener lista de préstamos
             List<Prestamo> prestamos = controlador.getListaPrestamos();
-            
-            // Generar opciones para materiales
-            StringBuilder materialesOptions = new StringBuilder();
-            for (Material material : materialesDisponibles) {
-                String descripcion = material instanceof Libro ? 
-                    ((Libro) material).getTitulo() : 
-                    ((ArtEspeciales) material).getDescripcion();
-                materialesOptions.append("<option value=\"").append(material.getId()).append("\">")
-                    .append("ID: ").append(material.getId()).append(" - ").append(descripcion)
-                    .append("</option>");
-            }
-            
-            // Generar opciones para lectores
-            StringBuilder lectoresOptions = new StringBuilder();
-            for (Lector lector : lectoresActivos) {
-                lectoresOptions.append("<option value=\"").append(lector.getEmail()).append("\">")
-                    .append(lector.getNombre()).append(" (").append(lector.getEmail()).append(")")
-                    .append("</option>");
-            }
-            
-            // Generar opciones para bibliotecarios
-            StringBuilder bibliotecariosOptions = new StringBuilder();
-            for (Bibliotecario bibliotecario : bibliotecarios) {
-                bibliotecariosOptions.append("<option value=\"").append(bibliotecario.getEmail()).append("\">")
-                    .append(bibliotecario.getNombre()).append(" (Nro. ").append(bibliotecario.getNroEmpleado()).append(")")
-                    .append("</option>");
-            }
             
             // Generar tabla de préstamos
             StringBuilder prestamosHtml = new StringBuilder();
             for (Prestamo prestamo : prestamos) {
-                String materialDesc = prestamo.getMaterial() instanceof Libro ? 
-                    ((Libro) prestamo.getMaterial()).getTitulo() : 
-                    ((ArtEspeciales) prestamo.getMaterial()).getDescripcion();
+                String materialDesc = "";
+                Material material = prestamo.getMaterial();
+                try {
+                    if (material instanceof Libro) {
+                        materialDesc = ((Libro) material).getTitulo();
+                    } else if (material instanceof ArtEspeciales) {
+                        materialDesc = ((ArtEspeciales) material).getDescripcion();
+                    } else {
+                        materialDesc = "Material ID: " + material.getId();
+                    }
+                } catch (Exception e) {
+                    materialDesc = "Material ID: " + material.getId();
+                }
                 
                 prestamosHtml.append("<tr>")
                     .append("<td>").append(prestamo.getId()).append("</td>")
                     .append("<td>").append(materialDesc).append("</td>")
-                    .append("<td>").append(prestamo.getLector().getNombre()).append("</td>")
-                    .append("<td>").append(prestamo.getBibliotecario().getNombre()).append("</td>")
+                    .append("<td>").append(prestamo.getLector() != null ? prestamo.getLector().getNombre() : "N/A").append("</td>")
+                    .append("<td>").append(prestamo.getBibliotecario() != null ? prestamo.getBibliotecario().getNombre() : "N/A").append("</td>")
                     .append("<td>").append(prestamo.getFechaSolicitada()).append("</td>")
                     .append("<td>").append(prestamo.getFechaDevolucion()).append("</td>")
                     .append("<td><span class=\"badge bg-").append(prestamo.getEstadoP() == EstadoP.ENCURSO ? "warning" : "success").append("\">")
                     .append(prestamo.getEstadoP()).append("</span></td>")
                     .append("<td>")
-                    .append("<button class=\"btn btn-sm btn-primary\" onclick=\"editarPrestamo(").append(prestamo.getId()).append(")\">Editar</button> ")
-                    .append("<button class=\"btn btn-sm btn-").append(prestamo.getEstadoP() == EstadoP.ENCURSO ? "success" : "secondary").append("\" onclick=\"cambiarEstadoPrestamo(").append(prestamo.getId()).append(")\">")
-                    .append(prestamo.getEstadoP() == EstadoP.ENCURSO ? "Marcar Devuelto" : "Marcar En Curso")
+                    .append("<div class=\"action-buttons\">")
+                    .append("<button class=\"btn btn-sm btn-primary\" onclick=\"editarPrestamo(").append(prestamo.getId()).append(")\">Editar</button>")
+                    .append("<button class=\"btn btn-sm btn-").append(prestamo.getEstadoP() == EstadoP.ENCURSO ? "success" : "warning").append("\" onclick=\"cambiarEstadoPrestamo(").append(prestamo.getId()).append(")\">")
+                    .append(prestamo.getEstadoP() == EstadoP.ENCURSO ? "Devolver" : "En Curso")
                     .append("</button>")
+                    .append("</div>")
                     .append("</td>")
                     .append("</tr>");
             }
@@ -2289,52 +2755,15 @@ public class CompleteWebServer {
                 "<div class=\"row mb-4\">" +
                 "<div class=\"col-12\">" +
                 "<div class=\"card\">" +
-                "<div class=\"card-header bg-primary text-white\">" +
-                "<h5 class=\"mb-0\">➕ Crear Nuevo Préstamo</h5>" +
+                "<div class=\"card-header bg-info text-white d-flex justify-content-between align-items-center\">" +
+                "<h5 class=\"mb-0\">🔍 Gestión de Préstamos</h5>" +
+                "<div>" +
+                "<a href=\"/bibliotecario/prestamos/por-lector\" class=\"btn btn-light btn-sm me-2\">📋 Por Lector</a>" +
+                "<a href=\"/bibliotecario/prestamos/activos\" class=\"btn btn-light btn-sm\">⏰ Activos</a>" +
+                "</div>" +
                 "</div>" +
                 "<div class=\"card-body\">" +
-                "<form>" +
-                "<div class=\"row\">" +
-                "<div class=\"col-md-4\">" +
-                "<div class=\"mb-3\">" +
-                "<label for=\"material\" class=\"form-label\">Material</label>" +
-                "<select class=\"form-select\" id=\"material\" required>" +
-                "<option value=\"\">Seleccionar material...</option>" +
-                materialesOptions.toString() +
-                "</select>" +
-                "</div>" +
-                "</div>" +
-                "<div class=\"col-md-4\">" +
-                "<div class=\"mb-3\">" +
-                "<label for=\"lector\" class=\"form-label\">Lector</label>" +
-                "<select class=\"form-select\" id=\"lector\" required>" +
-                "<option value=\"\">Seleccionar lector...</option>" +
-                lectoresOptions.toString() +
-                "</select>" +
-                "</div>" +
-                "</div>" +
-                "<div class=\"col-md-4\">" +
-                "<div class=\"mb-3\">" +
-                "<label for=\"bibliotecario\" class=\"form-label\">Bibliotecario</label>" +
-                "<select class=\"form-select\" id=\"bibliotecario\" required>" +
-                "<option value=\"\">Seleccionar bibliotecario...</option>" +
-                bibliotecariosOptions.toString() +
-                "</select>" +
-                "</div>" +
-                "</div>" +
-                "</div>" +
-                "<div class=\"row\">" +
-                "<div class=\"col-md-6\">" +
-                "<div class=\"mb-3\">" +
-                "<label for=\"fechaDevolucion\" class=\"form-label\">Fecha de Devolución</label>" +
-                "<input type=\"date\" class=\"form-control\" id=\"fechaDevolucion\" required>" +
-                "</div>" +
-                "</div>" +
-                "<div class=\"col-md-6 d-flex align-items-end\">" +
-                "<button type=\"submit\" class=\"btn btn-primary\">Crear Préstamo</button>" +
-                "</div>" +
-                "</div>" +
-                "</form>" +
+                "<p class=\"mb-0\">Gestiona el estado de los préstamos y consulta información detallada de los lectores.</p>" +
                 "</div>" +
                 "</div>" +
                 "</div>" +
@@ -2382,6 +2811,848 @@ public class CompleteWebServer {
                 "            body: 'id=' + id" +
                 "        }).then(response => response.text()).then(data => {" +
                 "            alert('Estado del préstamo cambiado exitosamente');" +
+                "            location.reload();" +
+                "        }).catch(error => {" +
+                "            alert('Error al cambiar estado: ' + error);" +
+                "        });" +
+                "    }" +
+                "}" +
+                "</script>" +
+                "</body>" +
+                "</html>";
+        }
+    }
+    
+    // Handler para editar préstamos
+    static class EditarPrestamoHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            try {
+                if ("GET".equals(t.getRequestMethod())) {
+                    // Mostrar formulario de edición
+                    String query = t.getRequestURI().getQuery();
+                    if (query != null && query.contains("id=")) {
+                        String idStr = query.substring(query.indexOf("id=") + 3);
+                        int id = Integer.parseInt(idStr);
+                        
+                        Prestamo prestamo = controlador.obtenerPrestamo(id);
+                        if (prestamo != null) {
+                            String html = generateEditarPrestamoPage(prestamo);
+                            byte[] response = html.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                            t.sendResponseHeaders(200, response.length);
+                            t.getResponseBody().write(response);
+                        } else {
+                            String html = CompleteWebServer.generateBasePage("Error", "<div class=\"alert alert-danger\">Préstamo no encontrado</div>");
+                            byte[] response = html.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                            t.sendResponseHeaders(404, response.length);
+                            t.getResponseBody().write(response);
+                        }
+                    } else {
+                        // Listar préstamos para seleccionar uno
+                        String html = generateListaPrestamosParaEditarPage();
+                        byte[] response = html.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                        t.sendResponseHeaders(200, response.length);
+                        t.getResponseBody().write(response);
+                    }
+                } else if ("POST".equals(t.getRequestMethod())) {
+                    // Procesar actualización completa
+                    String requestBody = new String(t.getRequestBody().readAllBytes());
+                    Map<String, String> params = parseFormData(requestBody);
+                    
+                    int id = Integer.parseInt(params.get("id"));
+                    
+                    // Obtener nuevos valores del formulario
+                    String nuevoMaterialIdStr = params.get("materialId");
+                    String nuevoLectorEmail = params.get("lectorEmail");
+                    String nuevoBibliotecarioEmail = params.get("bibliotecarioEmail");
+                    String nuevoEstadoStr = params.get("estado");
+                    String fechaDevolucionStr = params.get("fechaDevolucion");
+                    String fechaSolicitudStr = params.get("fechaSolicitud");
+                    
+                    Prestamo prestamo = controlador.obtenerPrestamo(id);
+                    if (prestamo != null) {
+                        // Obtener objetos actualizados
+                        Material nuevoMaterial = prestamo.getMaterial();
+                        Lector nuevoLector = prestamo.getLector();
+                        Bibliotecario nuevoBibliotecario = prestamo.getBibliotecario();
+                        EstadoP nuevoEstado = prestamo.getEstadoP();
+                        DTFecha nuevaFechaDevolucion = prestamo.getFechaDevolucion();
+                        DTFecha nuevaFechaSolicitud = prestamo.getFechaSolicitada();
+                        
+                        // Actualizar material si se proporciona
+                        if (nuevoMaterialIdStr != null && !nuevoMaterialIdStr.isEmpty()) {
+                            int nuevoMaterialId = Integer.parseInt(nuevoMaterialIdStr);
+                            nuevoMaterial = controlador.obtenerMaterial(nuevoMaterialId);
+                        }
+                        
+                        // Actualizar lector si se proporciona
+                        if (nuevoLectorEmail != null && !nuevoLectorEmail.isEmpty()) {
+                            nuevoLector = controlador.obtenerLector(nuevoLectorEmail);
+                        }
+                        
+                        // Actualizar bibliotecario si se proporciona
+                        if (nuevoBibliotecarioEmail != null && !nuevoBibliotecarioEmail.isEmpty()) {
+                            nuevoBibliotecario = controlador.obtenerBibliotecario(nuevoBibliotecarioEmail);
+                        }
+                        
+                        // Actualizar estado si se proporciona
+                        if (nuevoEstadoStr != null && !nuevoEstadoStr.isEmpty()) {
+                            nuevoEstado = EstadoP.valueOf(nuevoEstadoStr);
+                        }
+                        
+                        // Actualizar fecha de devolución si se proporciona
+                        if (fechaDevolucionStr != null && !fechaDevolucionStr.isEmpty()) {
+                            String[] partes = fechaDevolucionStr.split("-");
+                            int anio = Integer.parseInt(partes[0]);
+                            int mes = Integer.parseInt(partes[1]);
+                            int dia = Integer.parseInt(partes[2]);
+                            nuevaFechaDevolucion = new DTFecha(dia, mes, anio);
+                        }
+                        
+                        // Actualizar fecha de solicitud si se proporciona
+                        if (fechaSolicitudStr != null && !fechaSolicitudStr.isEmpty()) {
+                            String[] partes = fechaSolicitudStr.split("-");
+                            int anio = Integer.parseInt(partes[0]);
+                            int mes = Integer.parseInt(partes[1]);
+                            int dia = Integer.parseInt(partes[2]);
+                            nuevaFechaSolicitud = new DTFecha(dia, mes, anio);
+                        }
+                        
+                        // Usar el método de actualización completa
+                        boolean actualizado = controlador.actualizarPrestamoCompleto(
+                            id, nuevoMaterial, nuevoLector, nuevoBibliotecario, 
+                            nuevoEstado, nuevaFechaSolicitud, nuevaFechaDevolucion
+                        );
+                        
+                        if (actualizado) {
+                            String response = "Préstamo actualizado exitosamente";
+                            byte[] responseBytes = response.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                            t.getResponseHeaders().set("Location", "/bibliotecario/prestamos");
+                            t.sendResponseHeaders(302, responseBytes.length);
+                            t.getResponseBody().write(responseBytes);
+                        } else {
+                            String response = "Error al actualizar el préstamo";
+                            byte[] responseBytes = response.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                            t.sendResponseHeaders(500, responseBytes.length);
+                            t.getResponseBody().write(responseBytes);
+                        }
+                    } else {
+                        String response = "Préstamo no encontrado";
+                        byte[] responseBytes = response.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                        t.sendResponseHeaders(404, responseBytes.length);
+                        t.getResponseBody().write(responseBytes);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                String html = CompleteWebServer.generateBasePage("Error", "<div class=\"alert alert-danger\">Error al procesar la solicitud: " + e.getMessage() + "</div>");
+                byte[] response = html.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                t.sendResponseHeaders(500, response.length);
+                t.getResponseBody().write(response);
+            } finally {
+                t.getResponseBody().close();
+            }
+        }
+        
+        private String generateListaPrestamosParaEditarPage() {
+            List<Prestamo> prestamos = controlador.getListaPrestamos();
+            
+            StringBuilder prestamosHtml = new StringBuilder();
+            for (Prestamo prestamo : prestamos) {
+                Material material = prestamo.getMaterial();
+                String materialNombre = "";
+                if (material instanceof Libro) {
+                    materialNombre = ((Libro) material).getTitulo();
+                } else if (material instanceof ArtEspeciales) {
+                    materialNombre = ((ArtEspeciales) material).getDescripcion();
+                }
+                
+                prestamosHtml.append("<tr>")
+                    .append("<td>").append(prestamo.getId()).append("</td>")
+                    .append("<td>").append(materialNombre).append("</td>")
+                    .append("<td>").append(prestamo.getLector().getNombre()).append("</td>")
+                    .append("<td>").append(prestamo.getBibliotecario().getNombre()).append("</td>")
+                    .append("<td>").append(prestamo.getFechaSolicitada()).append("</td>")
+                    .append("<td>").append(prestamo.getFechaDevolucion()).append("</td>")
+                    .append("<td><span class=\"badge bg-").append(prestamo.getEstadoP() == EstadoP.ENCURSO ? "warning" : "success").append("\">").append(prestamo.getEstadoP()).append("</span></td>")
+                    .append("<td><a href=\"/bibliotecario/prestamos/editar?id=").append(prestamo.getId()).append("\" class=\"btn btn-sm btn-primary\">Editar</a></td>")
+                    .append("</tr>");
+            }
+            
+            return CompleteWebServer.generateBasePage("Editar Préstamo", 
+                "<div class=\"container mt-4\">" +
+                "<h2><i class=\"fas fa-edit\"></i> Editar Préstamo</h2>" +
+                "<p class=\"text-muted\">Selecciona un préstamo para editar su información.</p>" +
+                "<div class=\"card\">" +
+                "<div class=\"card-body\">" +
+                "<div class=\"table-responsive\">" +
+                "<table class=\"table table-striped\">" +
+                "<thead>" +
+                "<tr>" +
+                "<th>ID</th>" +
+                "<th>Material</th>" +
+                "<th>Lector</th>" +
+                "<th>Bibliotecario</th>" +
+                "<th>Fecha Solicitud</th>" +
+                "<th>Fecha Devolución</th>" +
+                "<th>Estado</th>" +
+                "<th>Acción</th>" +
+                "</tr>" +
+                "</thead>" +
+                "<tbody>" +
+                prestamosHtml.toString() +
+                "</tbody>" +
+                "</table>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"mt-3\">" +
+                "<a href=\"/bibliotecario/prestamos\" class=\"btn btn-secondary\"><i class=\"fas fa-arrow-left\"></i> Volver a Préstamos</a>" +
+                "</div>" +
+                "</div>");
+        }
+        
+        private String generateEditarPrestamoPage(Prestamo prestamo) {
+            Material material = prestamo.getMaterial();
+            String materialNombre = "";
+            if (material instanceof Libro) {
+                materialNombre = ((Libro) material).getTitulo();
+            } else if (material instanceof ArtEspeciales) {
+                materialNombre = ((ArtEspeciales) material).getDescripcion();
+            }
+            
+            String fechaDevolucion = prestamo.getFechaDevolucion() != null ? 
+                String.format("%04d-%02d-%02d", prestamo.getFechaDevolucion().getAnio(), 
+                             prestamo.getFechaDevolucion().getMes(), 
+                             prestamo.getFechaDevolucion().getDia()) : "";
+            
+            String fechaSolicitud = prestamo.getFechaSolicitada() != null ? 
+                String.format("%04d-%02d-%02d", prestamo.getFechaSolicitada().getAnio(), 
+                             prestamo.getFechaSolicitada().getMes(), 
+                             prestamo.getFechaSolicitada().getDia()) : "";
+            
+            // Generar opciones de materiales
+            List<Material> materiales = controlador.getListaMateriales();
+            StringBuilder materialesOptions = new StringBuilder();
+            for (Material mat : materiales) {
+                String nombre = "";
+                if (mat instanceof Libro) {
+                    nombre = ((Libro) mat).getTitulo();
+                } else if (mat instanceof ArtEspeciales) {
+                    nombre = ((ArtEspeciales) mat).getDescripcion();
+                }
+                String selected = mat.getId() == material.getId() ? " selected" : "";
+                materialesOptions.append("<option value=\"").append(mat.getId()).append("\"").append(selected).append(">")
+                    .append(nombre).append(" (ID: ").append(mat.getId()).append(")</option>");
+            }
+            
+            // Generar opciones de lectores
+            List<Lector> lectores = controlador.getListaLectores();
+            StringBuilder lectoresOptions = new StringBuilder();
+            for (Lector lector : lectores) {
+                String selected = lector.getEmail().equals(prestamo.getLector().getEmail()) ? " selected" : "";
+                lectoresOptions.append("<option value=\"").append(lector.getEmail()).append("\"").append(selected).append(">")
+                    .append(lector.getNombre()).append(" (").append(lector.getEmail()).append(")</option>");
+            }
+            
+            // Generar opciones de bibliotecarios
+            List<Bibliotecario> bibliotecarios = controlador.getListaBibliotecarios();
+            StringBuilder bibliotecariosOptions = new StringBuilder();
+            for (Bibliotecario biblio : bibliotecarios) {
+                String selected = biblio.getEmail().equals(prestamo.getBibliotecario().getEmail()) ? " selected" : "";
+                bibliotecariosOptions.append("<option value=\"").append(biblio.getEmail()).append("\"").append(selected).append(">")
+                    .append(biblio.getNombre()).append(" (").append(biblio.getEmail()).append(")</option>");
+            }
+            
+            return CompleteWebServer.generateBasePage("Editar Préstamo", 
+                "<div class=\"container mt-4\">" +
+                "<h2><i class=\"fas fa-edit\"></i> Editar Préstamo #" + prestamo.getId() + "</h2>" +
+                "<div class=\"alert alert-info\">" +
+                "<i class=\"fas fa-info-circle\"></i> Puedes editar todos los campos del préstamo." +
+                "</div>" +
+                "<div class=\"card\">" +
+                "<div class=\"card-body\">" +
+                "<form method=\"POST\" action=\"/bibliotecario/prestamos/editar\">" +
+                "<input type=\"hidden\" name=\"id\" value=\"" + prestamo.getId() + "\">" +
+                "<div class=\"row\">" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label for=\"materialId\" class=\"form-label\">Material:</label>" +
+                "<select class=\"form-select\" id=\"materialId\" name=\"materialId\" required>" +
+                materialesOptions.toString() +
+                "</select>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label for=\"lectorEmail\" class=\"form-label\">Lector:</label>" +
+                "<select class=\"form-select\" id=\"lectorEmail\" name=\"lectorEmail\" required>" +
+                lectoresOptions.toString() +
+                "</select>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"row\">" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label for=\"bibliotecarioEmail\" class=\"form-label\">Bibliotecario:</label>" +
+                "<select class=\"form-select\" id=\"bibliotecarioEmail\" name=\"bibliotecarioEmail\" required>" +
+                bibliotecariosOptions.toString() +
+                "</select>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label for=\"estado\" class=\"form-label\">Estado:</label>" +
+                "<select class=\"form-select\" id=\"estado\" name=\"estado\" required>" +
+                "<option value=\"ENCURSO\"" + (prestamo.getEstadoP() == EstadoP.ENCURSO ? " selected" : "") + ">En Curso</option>" +
+                "<option value=\"DEVUELTO\"" + (prestamo.getEstadoP() == EstadoP.DEVUELTO ? " selected" : "") + ">Devuelto</option>" +
+                "</select>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"row\">" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label for=\"fechaSolicitud\" class=\"form-label\">Fecha Solicitud:</label>" +
+                "<input type=\"date\" class=\"form-control\" id=\"fechaSolicitud\" name=\"fechaSolicitud\" value=\"" + fechaSolicitud + "\">" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label for=\"fechaDevolucion\" class=\"form-label\">Fecha Devolución:</label>" +
+                "<input type=\"date\" class=\"form-control\" id=\"fechaDevolucion\" name=\"fechaDevolucion\" value=\"" + fechaDevolucion + "\">" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"d-flex gap-2\">" +
+                "<button type=\"submit\" class=\"btn btn-primary\"><i class=\"fas fa-save\"></i> Guardar Cambios</button>" +
+                "<a href=\"/bibliotecario/prestamos\" class=\"btn btn-secondary\"><i class=\"fas fa-arrow-left\"></i> Cancelar</a>" +
+                "</div>" +
+                "</form>" +
+                "</div>" +
+                "</div>" +
+                "</div>");
+        }
+    }
+    
+    // Handler para editar materiales
+    static class EditarMaterialHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            try {
+                if ("GET".equals(t.getRequestMethod())) {
+                    String query = t.getRequestURI().getQuery();
+                    if (query != null && query.contains("id=")) {
+                        String idStr = query.substring(query.indexOf("id=") + 3);
+                        int id = Integer.parseInt(idStr);
+                        
+                        Material material = controlador.obtenerMaterial(id);
+                        if (material != null) {
+                            String html = generateEditarMaterialPage(material);
+                            byte[] response = html.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                            t.sendResponseHeaders(200, response.length);
+                            t.getResponseBody().write(response);
+                        } else {
+                            String html = CompleteWebServer.generateBasePage("Error", "<div class=\"alert alert-danger\">Material no encontrado</div>");
+                            byte[] response = html.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                            t.sendResponseHeaders(404, response.length);
+                            t.getResponseBody().write(response);
+                        }
+                    } else {
+                        String html = generateListaMaterialesParaEditarPage();
+                        byte[] response = html.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                        t.sendResponseHeaders(200, response.length);
+                        t.getResponseBody().write(response);
+                    }
+                } else if ("POST".equals(t.getRequestMethod())) {
+                    String requestBody = new String(t.getRequestBody().readAllBytes());
+                    Map<String, String> params = parseFormData(requestBody);
+                    
+                    int id = Integer.parseInt(params.get("id"));
+                    String fechaIngresoStr = params.get("fechaIngreso");
+                    
+                    if (fechaIngresoStr != null && !fechaIngresoStr.isEmpty()) {
+                        String[] partes = fechaIngresoStr.split("-");
+                        int anio = Integer.parseInt(partes[0]);
+                        int mes = Integer.parseInt(partes[1]);
+                        int dia = Integer.parseInt(partes[2]);
+                        DTFecha nuevaFechaIngreso = new DTFecha(dia, mes, anio);
+                        
+                        boolean actualizado = controlador.editarMaterial(id, nuevaFechaIngreso);
+                        
+                        if (actualizado) {
+                            String response = "Material actualizado exitosamente";
+                            byte[] responseBytes = response.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                            t.getResponseHeaders().set("Location", "/bibliotecario/materiales");
+                            t.sendResponseHeaders(302, responseBytes.length);
+                            t.getResponseBody().write(responseBytes);
+                        } else {
+                            String response = "Error al actualizar el material";
+                            byte[] responseBytes = response.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                            t.sendResponseHeaders(500, responseBytes.length);
+                            t.getResponseBody().write(responseBytes);
+                        }
+                    } else {
+                        String response = "Fecha de ingreso requerida";
+                        byte[] responseBytes = response.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                        t.sendResponseHeaders(400, responseBytes.length);
+                        t.getResponseBody().write(responseBytes);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                String html = CompleteWebServer.generateBasePage("Error", "<div class=\"alert alert-danger\">Error al procesar la solicitud: " + e.getMessage() + "</div>");
+                byte[] response = html.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                t.sendResponseHeaders(500, response.length);
+                t.getResponseBody().write(response);
+            } finally {
+                t.getResponseBody().close();
+            }
+        }
+        
+        private String generateListaMaterialesParaEditarPage() {
+            List<Material> materiales = controlador.getListaMateriales();
+            
+            StringBuilder materialesHtml = new StringBuilder();
+            for (Material material : materiales) {
+                String materialNombre = "";
+                String tipo = "";
+                if (material instanceof Libro) {
+                    materialNombre = ((Libro) material).getTitulo();
+                    tipo = "Libro";
+                } else if (material instanceof ArtEspeciales) {
+                    materialNombre = ((ArtEspeciales) material).getDescripcion();
+                    tipo = "Artículo Especial";
+                }
+                
+                materialesHtml.append("<tr>")
+                    .append("<td>").append(material.getId()).append("</td>")
+                    .append("<td>").append(materialNombre).append("</td>")
+                    .append("<td>").append(tipo).append("</td>")
+                    .append("<td>").append(material.getFechaIngreso()).append("</td>")
+                    .append("<td><a href=\"/bibliotecario/materiales/editar?id=").append(material.getId()).append("\" class=\"btn btn-sm btn-primary\">Editar</a></td>")
+                    .append("</tr>");
+            }
+            
+            return CompleteWebServer.generateBasePage("Editar Material", 
+                "<div class=\"container mt-4\">" +
+                "<h2><i class=\"fas fa-edit\"></i> Editar Material</h2>" +
+                "<p class=\"text-muted\">Selecciona un material para editar su información.</p>" +
+                "<div class=\"card\">" +
+                "<div class=\"card-body\">" +
+                "<div class=\"table-responsive\">" +
+                "<table class=\"table table-striped\">" +
+                "<thead>" +
+                "<tr>" +
+                "<th>ID</th>" +
+                "<th>Nombre/Título</th>" +
+                "<th>Tipo</th>" +
+                "<th>Fecha Ingreso</th>" +
+                "<th>Acción</th>" +
+                "</tr>" +
+                "</thead>" +
+                "<tbody>" +
+                materialesHtml.toString() +
+                "</tbody>" +
+                "</table>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"mt-3\">" +
+                "<a href=\"/bibliotecario/materiales\" class=\"btn btn-secondary\"><i class=\"fas fa-arrow-left\"></i> Volver a Materiales</a>" +
+                "</div>" +
+                "</div>");
+        }
+        
+        private String generateEditarMaterialPage(Material material) {
+            String materialNombre = "";
+            String tipo = "";
+            if (material instanceof Libro) {
+                materialNombre = ((Libro) material).getTitulo();
+                tipo = "Libro";
+            } else if (material instanceof ArtEspeciales) {
+                materialNombre = ((ArtEspeciales) material).getDescripcion();
+                tipo = "Artículo Especial";
+            }
+            
+            String fechaIngreso = material.getFechaIngreso() != null ? 
+                String.format("%04d-%02d-%02d", material.getFechaIngreso().getAnio(), 
+                             material.getFechaIngreso().getMes(), 
+                             material.getFechaIngreso().getDia()) : "";
+            
+            return CompleteWebServer.generateBasePage("Editar Material", 
+                "<div class=\"container mt-4\">" +
+                "<h2><i class=\"fas fa-edit\"></i> Editar Material #" + material.getId() + "</h2>" +
+                "<div class=\"card\">" +
+                "<div class=\"card-body\">" +
+                "<form method=\"POST\" action=\"/bibliotecario/materiales/editar\">" +
+                "<input type=\"hidden\" name=\"id\" value=\"" + material.getId() + "\">" +
+                "<div class=\"row\">" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label class=\"form-label\">Nombre/Título:</label>" +
+                "<input type=\"text\" class=\"form-control\" value=\"" + materialNombre + "\" readonly>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label class=\"form-label\">Tipo:</label>" +
+                "<input type=\"text\" class=\"form-control\" value=\"" + tipo + "\" readonly>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"row\">" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label for=\"fechaIngreso\" class=\"form-label\">Fecha de Ingreso:</label>" +
+                "<input type=\"date\" class=\"form-control\" id=\"fechaIngreso\" name=\"fechaIngreso\" value=\"" + fechaIngreso + "\" required>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"d-flex gap-2\">" +
+                "<button type=\"submit\" class=\"btn btn-primary\"><i class=\"fas fa-save\"></i> Guardar Cambios</button>" +
+                "<a href=\"/bibliotecario/materiales\" class=\"btn btn-secondary\"><i class=\"fas fa-arrow-left\"></i> Cancelar</a>" +
+                "</div>" +
+                "</form>" +
+                "</div>" +
+                "</div>" +
+                "</div>");
+        }
+    }
+    
+    // Handler para editar usuarios
+    static class EditarUsuarioHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            try {
+                if ("GET".equals(t.getRequestMethod())) {
+                    String query = t.getRequestURI().getQuery();
+                    if (query != null && query.contains("email=")) {
+                        String email = query.substring(query.indexOf("email=") + 6);
+                        email = java.net.URLDecoder.decode(email, "UTF-8");
+                        
+                        Usuario usuario = controlador.obtenerUsuario(email);
+                        if (usuario != null) {
+                            String html = generateEditarUsuarioPage(usuario);
+                            byte[] response = html.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                            t.sendResponseHeaders(200, response.length);
+                            t.getResponseBody().write(response);
+                        } else {
+                            String html = CompleteWebServer.generateBasePage("Error", "<div class=\"alert alert-danger\">Usuario no encontrado</div>");
+                            byte[] response = html.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                            t.sendResponseHeaders(404, response.length);
+                            t.getResponseBody().write(response);
+                        }
+                    } else {
+                        String html = generateListaUsuariosParaEditarPage();
+                        byte[] response = html.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                        t.sendResponseHeaders(200, response.length);
+                        t.getResponseBody().write(response);
+                    }
+                } else if ("POST".equals(t.getRequestMethod())) {
+                    String requestBody = new String(t.getRequestBody().readAllBytes());
+                    Map<String, String> params = parseFormData(requestBody);
+                    
+                    String email = params.get("email");
+                    String nuevoNombre = params.get("nombre");
+                    
+                    if (nuevoNombre != null && !nuevoNombre.isEmpty()) {
+                        boolean actualizado = controlador.editarUsuario(email, nuevoNombre);
+                        
+                        if (actualizado) {
+                            String response = "Usuario actualizado exitosamente";
+                            byte[] responseBytes = response.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                            t.getResponseHeaders().set("Location", "/bibliotecario/usuarios");
+                            t.sendResponseHeaders(302, responseBytes.length);
+                            t.getResponseBody().write(responseBytes);
+                        } else {
+                            String response = "Error al actualizar el usuario";
+                            byte[] responseBytes = response.getBytes("UTF-8");
+                            t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                            t.sendResponseHeaders(500, responseBytes.length);
+                            t.getResponseBody().write(responseBytes);
+                        }
+                    } else {
+                        String response = "Nombre requerido";
+                        byte[] responseBytes = response.getBytes("UTF-8");
+                        t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                        t.sendResponseHeaders(400, responseBytes.length);
+                        t.getResponseBody().write(responseBytes);
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                String html = CompleteWebServer.generateBasePage("Error", "<div class=\"alert alert-danger\">Error al procesar la solicitud: " + e.getMessage() + "</div>");
+                byte[] response = html.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                t.sendResponseHeaders(500, response.length);
+                t.getResponseBody().write(response);
+            } finally {
+                t.getResponseBody().close();
+            }
+        }
+        
+        private String generateListaUsuariosParaEditarPage() {
+            List<Usuario> usuarios = controlador.getListaUsuarios();
+            
+            StringBuilder usuariosHtml = new StringBuilder();
+            for (Usuario usuario : usuarios) {
+                String tipo = "";
+                if (usuario instanceof Lector) {
+                    tipo = "Lector";
+                } else if (usuario instanceof Bibliotecario) {
+                    tipo = "Bibliotecario";
+                }
+                
+                usuariosHtml.append("<tr>")
+                    .append("<td>").append(usuario.getNombre()).append("</td>")
+                    .append("<td>").append(usuario.getEmail()).append("</td>")
+                    .append("<td>").append(tipo).append("</td>")
+                    .append("<td><a href=\"/bibliotecario/usuarios/editar?email=").append(usuario.getEmail()).append("\" class=\"btn btn-sm btn-primary\">Editar</a></td>")
+                    .append("</tr>");
+            }
+            
+            return CompleteWebServer.generateBasePage("Editar Usuario", 
+                "<div class=\"container mt-4\">" +
+                "<h2><i class=\"fas fa-edit\"></i> Editar Usuario</h2>" +
+                "<p class=\"text-muted\">Selecciona un usuario para editar su información.</p>" +
+                "<div class=\"card\">" +
+                "<div class=\"card-body\">" +
+                "<div class=\"table-responsive\">" +
+                "<table class=\"table table-striped\">" +
+                "<thead>" +
+                "<tr>" +
+                "<th>Nombre</th>" +
+                "<th>Email</th>" +
+                "<th>Tipo</th>" +
+                "<th>Acción</th>" +
+                "</tr>" +
+                "</thead>" +
+                "<tbody>" +
+                usuariosHtml.toString() +
+                "</tbody>" +
+                "</table>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"mt-3\">" +
+                "<a href=\"/bibliotecario/usuarios\" class=\"btn btn-secondary\"><i class=\"fas fa-arrow-left\"></i> Volver a Usuarios</a>" +
+                "</div>" +
+                "</div>");
+        }
+        
+        private String generateEditarUsuarioPage(Usuario usuario) {
+            String tipo = "";
+            if (usuario instanceof Lector) {
+                tipo = "Lector";
+            } else if (usuario instanceof Bibliotecario) {
+                tipo = "Bibliotecario";
+            }
+            
+            return CompleteWebServer.generateBasePage("Editar Usuario", 
+                "<div class=\"container mt-4\">" +
+                "<h2><i class=\"fas fa-edit\"></i> Editar Usuario</h2>" +
+                "<div class=\"card\">" +
+                "<div class=\"card-body\">" +
+                "<form method=\"POST\" action=\"/bibliotecario/usuarios/editar\">" +
+                "<input type=\"hidden\" name=\"email\" value=\"" + usuario.getEmail() + "\">" +
+                "<div class=\"row\">" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label class=\"form-label\">Email:</label>" +
+                "<input type=\"text\" class=\"form-control\" value=\"" + usuario.getEmail() + "\" readonly>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label class=\"form-label\">Tipo:</label>" +
+                "<input type=\"text\" class=\"form-control\" value=\"" + tipo + "\" readonly>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"row\">" +
+                "<div class=\"col-md-6\">" +
+                "<div class=\"mb-3\">" +
+                "<label for=\"nombre\" class=\"form-label\">Nombre:</label>" +
+                "<input type=\"text\" class=\"form-control\" id=\"nombre\" name=\"nombre\" value=\"" + usuario.getNombre() + "\" required>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"d-flex gap-2\">" +
+                "<button type=\"submit\" class=\"btn btn-primary\"><i class=\"fas fa-save\"></i> Guardar Cambios</button>" +
+                "<a href=\"/bibliotecario/usuarios\" class=\"btn btn-secondary\"><i class=\"fas fa-arrow-left\"></i> Cancelar</a>" +
+                "</div>" +
+                "</form>" +
+                "</div>" +
+                "</div>" +
+                "</div>");
+        }
+    }
+    
+    static class PrestamosActivosHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            try {
+                String response = generatePrestamosActivosPage();
+                byte[] responseBytes = response.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                t.sendResponseHeaders(200, responseBytes.length);
+                OutputStream os = t.getResponseBody();
+                os.write(responseBytes);
+                os.close();
+            } catch (Exception e) {
+                System.err.println("Error en PrestamosActivosHandler: " + e.getMessage());
+                e.printStackTrace();
+                String errorResponse = "Error interno del servidor: " + e.getMessage();
+                byte[] errorBytes = errorResponse.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                t.sendResponseHeaders(500, errorBytes.length);
+                OutputStream os = t.getResponseBody();
+                os.write(errorBytes);
+                os.close();
+            }
+        }
+        
+        private String generatePrestamosActivosPage() {
+            List<Prestamo> prestamos = controlador.getListaPrestamos();
+            List<Prestamo> prestamosActivos = new ArrayList<>();
+            
+            // Filtrar solo préstamos activos (EN CURSO)
+            for (Prestamo prestamo : prestamos) {
+                if (prestamo.getEstadoP() == EstadoP.ENCURSO) {
+                    prestamosActivos.add(prestamo);
+                }
+            }
+            
+            // Generar tabla de préstamos activos
+            StringBuilder prestamosHtml = new StringBuilder();
+            for (Prestamo prestamo : prestamosActivos) {
+                String materialDesc = "";
+                Material material = prestamo.getMaterial();
+                if (material instanceof Libro) {
+                    materialDesc = ((Libro) material).getTitulo();
+                } else if (material instanceof ArtEspeciales) {
+                    materialDesc = ((ArtEspeciales) material).getDescripcion();
+                } else {
+                    materialDesc = "Material ID: " + material.getId();
+                }
+                
+                prestamosHtml.append("<tr>")
+                    .append("<td>").append(prestamo.getId()).append("</td>")
+                    .append("<td>").append(materialDesc).append("</td>")
+                    .append("<td>").append(prestamo.getLector().getNombre()).append("</td>")
+                    .append("<td>").append(prestamo.getLector().getEmail()).append("</td>")
+                    .append("<td>").append(prestamo.getBibliotecario().getNombre()).append("</td>")
+                    .append("<td>").append(prestamo.getFechaSolicitada()).append("</td>")
+                    .append("<td>").append(prestamo.getFechaDevolucion()).append("</td>")
+                    .append("<td><span class=\"badge bg-warning\">EN CURSO</span></td>")
+                    .append("<td>")
+                    .append("<div class=\"action-buttons\">")
+                    .append("<button class=\"btn btn-sm btn-success\" onclick=\"cambiarEstadoPrestamo(").append(prestamo.getId()).append(")\">Devolver</button>")
+                    .append("</div>")
+                    .append("</td>")
+                    .append("</tr>");
+            }
+            
+            return "<!DOCTYPE html>" +
+                "<html lang=\"es\">" +
+                "<head>" +
+                "<meta charset=\"UTF-8\">" +
+                "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">" +
+                "<title>Préstamos Activos - Biblioteca Comunitaria</title>" +
+                "<link href=\"https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css\" rel=\"stylesheet\">" +
+                "<link href=\"https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css\" rel=\"stylesheet\">" +
+                "<style>" +
+                "body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }" +
+                ".card { box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: none; }" +
+                ".btn-primary { background: linear-gradient(45deg, #667eea, #764ba2); border: none; }" +
+                "</style>" +
+                "</head>" +
+                "<body>" +
+                "<nav class=\"navbar navbar-expand-lg navbar-dark bg-dark\">" +
+                "<div class=\"container\">" +
+                "<a class=\"navbar-brand\" href=\"/\">📚 Biblioteca Comunitaria</a>" +
+                "<div class=\"navbar-nav ms-auto\">" +
+                "<a class=\"nav-link\" href=\"/bibliotecario\">🏠 Dashboard</a>" +
+                "<a class=\"nav-link\" href=\"/bibliotecario/prestamos\">🔄 Préstamos</a>" +
+                "<a class=\"nav-link\" href=\"/logout\">🚪 Cerrar Sesión</a>" +
+                "</div>" +
+                "</div>" +
+                "</nav>" +
+                "<div class=\"container mt-4\">" +
+                "<div class=\"row\">" +
+                "<div class=\"col-12\">" +
+                "<h1 class=\"text-white mb-4\">⏰ Préstamos Activos</h1>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"row mb-4\">" +
+                "<div class=\"col-12\">" +
+                "<div class=\"alert alert-info\">" +
+                "<h5><i class=\"bi bi-info-circle\"></i> Información</h5>" +
+                "<p class=\"mb-0\">Lista de todos los préstamos que están actualmente en curso. Total: <strong>" + prestamosActivos.size() + "</strong> préstamos activos.</p>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<div class=\"row\">" +
+                "<div class=\"col-12\">" +
+                "<div class=\"card\">" +
+                "<div class=\"card-header bg-warning text-white\">" +
+                "<h5 class=\"mb-0\">📋 Préstamos en Curso</h5>" +
+                "</div>" +
+                "<div class=\"card-body\">" +
+                "<div class=\"table-responsive\">" +
+                "<table class=\"table table-striped\">" +
+                "<thead>" +
+                "<tr>" +
+                "<th>ID</th>" +
+                "<th>Material</th>" +
+                "<th>Lector</th>" +
+                "<th>Email</th>" +
+                "<th>Bibliotecario</th>" +
+                "<th>Fecha Solicitud</th>" +
+                "<th>Fecha Devolución</th>" +
+                "<th>Estado</th>" +
+                "<th>Acciones</th>" +
+                "</tr>" +
+                "</thead>" +
+                "<tbody>" +
+                prestamosHtml.toString() +
+                "</tbody>" +
+                "</table>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "</div>" +
+                "<script>" +
+                "function cambiarEstadoPrestamo(id) {" +
+                "    if (confirm('¿Estás seguro de marcar este préstamo como devuelto?')) {" +
+                "        fetch('/bibliotecario/prestamos/cambiar-estado', {" +
+                "            method: 'POST'," +
+                "            headers: {'Content-Type': 'application/x-www-form-urlencoded'}," +
+                "            body: 'id=' + id" +
+                "        }).then(response => response.text()).then(data => {" +
+                "            alert('Préstamo marcado como devuelto exitosamente');" +
                 "            location.reload();" +
                 "        }).catch(error => {" +
                 "            alert('Error al cambiar estado: ' + error);" +
@@ -2518,12 +3789,29 @@ public class CompleteWebServer {
     static class MisPrestamosHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
+            // Obtener el lector autenticado desde la sesión
+            Usuario usuario = getUsuarioFromSession(t);
+            
+            if (!(usuario instanceof Lector)) {
+                String response = "Debe iniciar sesión como lector para ver sus préstamos";
+                byte[] responseBytes = response.getBytes("UTF-8");
+                t.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+                t.sendResponseHeaders(401, responseBytes.length);
+                t.getResponseBody().write(responseBytes);
+                return;
+            }
+            
+            Lector lector = (Lector) usuario;
             List<Prestamo> prestamos = controlador.getListaPrestamos();
             
             StringBuilder prestamosActivosHtml = new StringBuilder();
             StringBuilder prestamosDevueltosHtml = new StringBuilder();
             
             for (Prestamo prestamo : prestamos) {
+                // Solo mostrar préstamos del lector autenticado
+                if (!prestamo.getLector().getId().equals(lector.getId())) {
+                    continue;
+                }
                 String materialInfo = "";
                 String lectorInfo = "";
                 String bibliotecarioInfo = "";

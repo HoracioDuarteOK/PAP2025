@@ -46,14 +46,7 @@ dependencies {
 
 application {
     // Define the main class for the application.
-    mainClass = 'pap2025.App'
-}
-
-// Task para ejecutar CrearTablasIniciales
-task crearTablas(type: JavaExec) {
-    group = 'application'
-    mainClass = 'pap2025.persistencia.CrearTablasIniciales'
-    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'pap2025.web.CompleteWebServer'
 }
 
 // Task para insertar datos iniciales
@@ -61,46 +54,6 @@ task insertarDatos(type: JavaExec) {
     group = 'application'
     mainClass = 'pap2025.persistencia.InsertarDatosIniciales'
     classpath = sourceSets.main.runtimeClasspath
-}
-
-// Task para ejecutar el servidor web embebido
-task webServer(type: JavaExec) {
-    group = 'application'
-    mainClass = 'pap2025.web.WebServer'
-    classpath = sourceSets.main.runtimeClasspath
-    args = ['8080'] // Puerto del servidor
-}
-
-// Task para ejecutar el servidor web simplificado
-task simpleWebServer(type: JavaExec) {
-    group = 'application'
-    mainClass = 'pap2025.web.SimpleWebServer'
-    classpath = sourceSets.main.runtimeClasspath
-    args = ['8080'] // Puerto del servidor
-}
-
-// Task para ejecutar el servidor de prueba
-task testServer(type: JavaExec) {
-    group = 'application'
-    mainClass = 'pap2025.web.TestServer'
-    classpath = sourceSets.main.runtimeClasspath
-    args = ['8080'] // Puerto del servidor
-}
-
-// Task para ejecutar el servidor híbrido
-task hybridWebServer(type: JavaExec) {
-    group = 'application'
-    mainClass = 'pap2025.web.HybridWebServer'
-    classpath = sourceSets.main.runtimeClasspath
-    args = ['8080'] // Puerto del servidor
-}
-
-// Task para ejecutar el servidor web funcional
-task workingWebServer(type: JavaExec) {
-    group = 'application'
-    mainClass = 'pap2025.web.WorkingWebServer'
-    classpath = sourceSets.main.runtimeClasspath
-    args = ['8080'] // Puerto del servidor
 }
 
 // Task para ejecutar el sistema completo

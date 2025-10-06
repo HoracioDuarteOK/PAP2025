@@ -3,7 +3,7 @@ package pap2025.persistencia;
 import pap2025.logica.*;
 import pap2025.datatypes.DTFecha;
 import pap2025.datatypes.DTDimensiones;
-import pap2025.fabrica.Fabrica;
+//  // Eliminado
 import pap2025.interfaz.IControladorFachada;
 import pap2025.persistencia.ConfiguracionBD;
 
@@ -21,7 +21,7 @@ public class InsertarDatosIniciales {
             }
             
             // Obtener controladores
-            IControladorFachada controlador = Fabrica.getInstancia().getIControladorFachada();
+            IControladorFachada controlador = pap2025.logica.ControladorFachada.getInstancia();
             
             // Crear bibliotecarios
             System.out.println("📚 Creando bibliotecarios...");
