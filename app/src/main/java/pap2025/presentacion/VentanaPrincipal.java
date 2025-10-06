@@ -553,17 +553,17 @@ public class VentanaPrincipal extends JFrame {
             pap2025.datatypes.DTFecha fechaHoy = new pap2025.datatypes.DTFecha(15, 1, 2025);
             pap2025.datatypes.DTFecha fechaAyer = new pap2025.datatypes.DTFecha(14, 1, 2025);
             
-            // Crear lectores (personajes de Marvel)
-            controladorFachada.registrarLector("Peter Parker (Spider-Man)", "spiderman@marvel.com", "20 Ingram Street, Queens, NYC", fechaHoy, pap2025.logica.Zona.BIBLOTECA_CENTRAL);
-            controladorFachada.registrarLector("Tony Stark (Iron Man)", "ironman@starkindustries.com", "10880 Malibu Point, Malibu, CA", fechaHoy, pap2025.logica.Zona.BIBLOTECA_CENTRAL);
-            controladorFachada.registrarLector("Steve Rogers (Captain America)", "captain.america@avengers.com", "569 Leaman Place, Brooklyn, NYC", fechaAyer, pap2025.logica.Zona.SUCURSAL_ESTE);
-            controladorFachada.registrarLector("Natasha Romanoff (Black Widow)", "blackwidow@shield.gov", "Classified Location", fechaHoy, pap2025.logica.Zona.SUCURSAL_OESTE);
-            controladorFachada.registrarLector("Thor Odinson", "thor@asgard.com", "Asgard, Nine Realms", fechaAyer, pap2025.logica.Zona.BIBLOTECA_CENTRAL);
+            // Crear lectores (personajes de Marvel) con contraseñas por defecto
+            controladorFachada.registrarLector("Peter Parker (Spider-Man)", "spiderman@marvel.com", "spider123", "20 Ingram Street, Queens, NYC", fechaHoy, pap2025.logica.Zona.BIBLOTECA_CENTRAL);
+            controladorFachada.registrarLector("Tony Stark (Iron Man)", "ironman@starkindustries.com", "iron123", "10880 Malibu Point, Malibu, CA", fechaHoy, pap2025.logica.Zona.BIBLOTECA_CENTRAL);
+            controladorFachada.registrarLector("Steve Rogers (Captain America)", "captain.america@avengers.com", "cap123", "569 Leaman Place, Brooklyn, NYC", fechaAyer, pap2025.logica.Zona.SUCURSAL_ESTE);
+            controladorFachada.registrarLector("Natasha Romanoff (Black Widow)", "blackwidow@shield.gov", "widow123", "Classified Location", fechaHoy, pap2025.logica.Zona.SUCURSAL_OESTE);
+            controladorFachada.registrarLector("Thor Odinson", "thor@asgard.com", "thor123", "Asgard, Nine Realms", fechaAyer, pap2025.logica.Zona.BIBLOTECA_CENTRAL);
             
-            // Crear bibliotecarios (personajes de Marvel)
-            controladorFachada.registrarBibliotecario("Nick Fury", "nick.fury@shield.gov", 1001);
-            controladorFachada.registrarBibliotecario("Pepper Potts", "pepper@starkindustries.com", 1002);
-            controladorFachada.registrarBibliotecario("Maria Hill", "maria.hill@shield.gov", 1003);
+            // Crear bibliotecarios (personajes de Marvel) con contraseñas por defecto
+            controladorFachada.registrarBibliotecario("Nick Fury", "nick.fury@shield.gov", "fury123", 1001);
+            controladorFachada.registrarBibliotecario("Pepper Potts", "pepper@starkindustries.com", "pepper123", 1002);
+            controladorFachada.registrarBibliotecario("Maria Hill", "maria.hill@shield.gov", "maria123", 1003);
             
             // Crear libros (temática Marvel)
             controladorFachada.crearLibro(fechaHoy, "The Amazing Spider-Man: The Complete Collection", 863);
@@ -677,17 +677,18 @@ public class VentanaPrincipal extends JFrame {
                 "   • Reactor Arc de Iron Man (Réplica)\n" +
                 "   • Escudo de Captain America (Réplica)\n" +
                 "   • Martillo de Thor Mjolnir (Réplica)\n\n" +
-                "👤 Se crearon 5 lectores Marvel:\n" +
-                "   • Peter Parker (Spider-Man)\n" +
-                "   • Tony Stark (Iron Man)\n" +
-                "   • Steve Rogers (Captain America)\n" +
-                "   • Natasha Romanoff (Black Widow)\n" +
-                "   • Thor Odinson\n\n" +
-                "🏢 Se crearon 3 bibliotecarios Marvel:\n" +
-                "   • Nick Fury\n" +
-                "   • Pepper Potts\n" +
-                "   • Maria Hill\n\n" +
+                "👤 Se crearon 5 lectores Marvel (con contraseñas):\n" +
+                "   • Peter Parker (spiderman@marvel.com) - spider123\n" +
+                "   • Tony Stark (ironman@starkindustries.com) - iron123\n" +
+                "   • Steve Rogers (captain.america@avengers.com) - cap123\n" +
+                "   • Natasha Romanoff (blackwidow@shield.gov) - widow123\n" +
+                "   • Thor Odinson (thor@asgard.com) - thor123\n\n" +
+                "🏢 Se crearon 3 bibliotecarios Marvel (con contraseñas):\n" +
+                "   • Nick Fury (nick.fury@shield.gov) - fury123\n" +
+                "   • Pepper Potts (pepper@starkindustries.com) - pepper123\n" +
+                "   • Maria Hill (maria.hill@shield.gov) - maria123\n\n" +
                 "📋 Se crearon 6 préstamos con diferentes estados\n\n" +
+                "🔐 Sistema de autenticación implementado por detrás\n" +
                 "💡 Los datos están listos para usar en las diferentes funcionalidades del sistema.",
                 "Datos Marvel Creados", 
                 JOptionPane.INFORMATION_MESSAGE);

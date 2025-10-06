@@ -47,9 +47,10 @@ public interface IControladorFachada {
      * Crea un nuevo usuario
      * @param nombre Nombre del usuario
      * @param email Email del usuario
+     * @param password Contraseña del usuario
      * @return true si se creó exitosamente, false en caso contrario
      */
-    public boolean crearUsuario(String nombre, String email);
+    public boolean crearUsuario(String nombre, String email, String password);
     
     /**
      * Obtiene un usuario por su email
@@ -92,18 +93,43 @@ public interface IControladorFachada {
      */
     public List<Usuario> getListaUsuarios();
     
+    // ===== MÉTODOS DE AUTENTICACIÓN =====
+    
+    /**
+     * Autentica un usuario con email y contraseña
+     * @param email Email del usuario
+     * @param password Contraseña del usuario
+     * @return Usuario autenticado o null si las credenciales son incorrectas
+     */
+    public Usuario autenticarUsuario(String email, String password);
+    
+    /**
+     * Verifica si un usuario es un lector
+     * @param usuario Usuario a verificar
+     * @return true si es lector, false en caso contrario
+     */
+    public boolean esLector(Usuario usuario);
+    
+    /**
+     * Verifica si un usuario es un bibliotecario
+     * @param usuario Usuario a verificar
+     * @return true si es bibliotecario, false en caso contrario
+     */
+    public boolean esBibliotecario(Usuario usuario);
+    
     // ===== MÉTODOS DE GESTIÓN DE LECTORES =====
     
     /**
      * Registra un nuevo lector en el sistema
      * @param nombre Nombre del lector
      * @param email Email del lector
+     * @param password Contraseña del lector
      * @param direccion Dirección del lector
      * @param fechaRegistro Fecha de registro
      * @param zona Zona de la biblioteca
      * @return true si se registró exitosamente, false en caso contrario
      */
-    public boolean registrarLector(String nombre, String email, String direccion, DTFecha fechaRegistro, Zona zona);
+    public boolean registrarLector(String nombre, String email, String password, String direccion, DTFecha fechaRegistro, Zona zona);
     
     /**
      * Obtiene un lector por su email
@@ -206,10 +232,11 @@ public interface IControladorFachada {
      * Registra un nuevo bibliotecario en el sistema
      * @param nombre Nombre del bibliotecario
      * @param email Email del bibliotecario
+     * @param password Contraseña del bibliotecario
      * @param nroEmpleado Número de empleado del bibliotecario
      * @return true si se registró exitosamente, false en caso contrario
      */
-    public boolean registrarBibliotecario(String nombre, String email, int nroEmpleado);
+    public boolean registrarBibliotecario(String nombre, String email, String password, int nroEmpleado);
     
     /**
      * Obtiene un bibliotecario por su email

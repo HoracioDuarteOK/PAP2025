@@ -20,13 +20,17 @@ public class Usuario {
     @Column(name = "email", nullable = false, unique = true, length = 100)
     protected String email;
     
+    @Column(name = "password", nullable = false, length = 255)
+    protected String password;
+    
     // Constructor sin argumentos requerido por JPA
     public Usuario() {
     }
     
-    public Usuario(String nombre, String email) {
+    public Usuario(String nombre, String email, String password) {
         this.nombre = nombre;
         this.email = email;
+        this.password = password;
     }
     
     // Getters
@@ -42,6 +46,10 @@ public class Usuario {
         return email;
     }
     
+    public String getPassword() {
+        return password;
+    }
+    
     // Setters
     public void setId(Integer id) {
         this.id = id;
@@ -53,6 +61,10 @@ public class Usuario {
     
     public void setEmail(String email) {
         this.email = email;
+    }
+    
+    public void setPassword(String password) {
+        this.password = password;
     }
     
     @Override

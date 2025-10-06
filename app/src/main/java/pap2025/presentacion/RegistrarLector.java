@@ -268,8 +268,11 @@ public class RegistrarLector extends JInternalFrame {
             LocalDate.now().getYear()
         );
         
+        // Generar contraseña por defecto (para la versión Swing)
+        String password = "lector123"; // Contraseña por defecto para lectores
+        
         // Intentar registrar el lector
-        boolean exito = controladorFachada.registrarLector(nombre, email, direccion, fechaRegistro, zona);
+        boolean exito = controladorFachada.registrarLector(nombre, email, password, direccion, fechaRegistro, zona);
         
         if (exito) {
             JOptionPane.showMessageDialog(this, 

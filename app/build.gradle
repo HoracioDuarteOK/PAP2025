@@ -11,6 +11,22 @@ plugins {
     id 'application'
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+compileJava {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+compileTestJava {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
 repositories {
     // Use Maven Central for resolving dependencies.
     mavenCentral()
@@ -45,6 +61,13 @@ application {
 task crearTablas(type: JavaExec) {
     group = 'application'
     mainClass = 'pap2025.persistencia.CrearTablasIniciales'
+    classpath = sourceSets.main.runtimeClasspath
+}
+
+// Task para probar autenticación
+task testAuth(type: JavaExec) {
+    group = 'application'
+    mainClass = 'pap2025.TestAutenticacion'
     classpath = sourceSets.main.runtimeClasspath
 }
 

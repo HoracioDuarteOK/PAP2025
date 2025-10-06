@@ -267,8 +267,11 @@ public class RegistrarBibliotecario extends JInternalFrame {
             return;
         }
         
+        // Generar contraseña por defecto (para la versión Swing)
+        String password = "biblio123"; // Contraseña por defecto para bibliotecarios
+        
         // Intentar registrar el bibliotecario
-        boolean exito = controladorFachada.registrarBibliotecario(nombre, email, nroEmpleado);
+        boolean exito = controladorFachada.registrarBibliotecario(nombre, email, password, nroEmpleado);
         
         if (exito) {
             JOptionPane.showMessageDialog(this, 

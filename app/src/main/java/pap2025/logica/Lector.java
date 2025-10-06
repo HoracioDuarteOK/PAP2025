@@ -34,8 +34,8 @@ public class Lector extends Usuario {
         super();
     }
     
-    public Lector(String nombre, String email, String direccion, DTFecha fechaRegistro, EstadoL estadoL, Zona zona) {
-        super(nombre, email);
+    public Lector(String nombre, String email, String password, String direccion, DTFecha fechaRegistro, EstadoL estadoL, Zona zona) {
+        super(nombre, email, password);
         this.direccion = direccion;
         this.fechaRegistro = fechaRegistro;
         this.estadoL = estadoL;

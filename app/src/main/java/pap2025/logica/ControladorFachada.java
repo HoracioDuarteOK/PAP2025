@@ -54,11 +54,14 @@ public class ControladorFachada implements IControladorFachada {
     // ===== MÉTODOS DE GESTIÓN DE USUARIOS =====
     
     @Override
-    public boolean crearUsuario(String nombre, String email) {
+    public boolean crearUsuario(String nombre, String email, String password) {
         if (nombre == null || nombre.trim().isEmpty()) {
             return false;
         }
         if (email == null || email.trim().isEmpty() || !email.contains("@")) {
+            return false;
+        }
+        if (password == null || password.trim().isEmpty()) {
             return false;
         }
         
@@ -68,7 +71,7 @@ public class ControladorFachada implements IControladorFachada {
         }
         
         // Crear el usuario
-        Usuario usuario = new Usuario(nombre, email);
+        Usuario usuario = new Usuario(nombre, email, password);
         manejadorUsuario.guardarUsuario(usuario);
         
         System.out.println("Usuario creado: " + usuario.getNombre() + " - " + usuario.getEmail());
@@ -141,11 +144,14 @@ public class ControladorFachada implements IControladorFachada {
     // ===== MÉTODOS DE GESTIÓN DE LECTORES =====
     
     @Override
-    public boolean registrarLector(String nombre, String email, String direccion, DTFecha fechaRegistro, Zona zona) {
+    public boolean registrarLector(String nombre, String email, String password, String direccion, DTFecha fechaRegistro, Zona zona) {
         if (nombre == null || nombre.trim().isEmpty()) {
             return false;
         }
         if (email == null || email.trim().isEmpty() || !email.contains("@")) {
+            return false;
+        }
+        if (password == null || password.trim().isEmpty()) {
             return false;
         }
         if (direccion == null || direccion.trim().isEmpty()) {
@@ -164,7 +170,7 @@ public class ControladorFachada implements IControladorFachada {
         }
         
         // Crear el lector con estado ACTIVO por defecto
-        Lector lector = new Lector(nombre, email, direccion, fechaRegistro, EstadoL.ACTIVO, zona);
+        Lector lector = new Lector(nombre, email, password, direccion, fechaRegistro, EstadoL.ACTIVO, zona);
         manejadorUsuario.guardarUsuario(lector);
         
         System.out.println("Lector creado: " + lector.getNombre() + " - " + lector.getEmail() + " - Estado: " + lector.getEstadoL());
@@ -353,11 +359,14 @@ public class ControladorFachada implements IControladorFachada {
     // ===== MÉTODOS DE GESTIÓN DE BIBLIOTECARIOS =====
     
     @Override
-    public boolean registrarBibliotecario(String nombre, String email, int nroEmpleado) {
+    public boolean registrarBibliotecario(String nombre, String email, String password, int nroEmpleado) {
         if (nombre == null || nombre.trim().isEmpty()) {
             return false;
         }
         if (email == null || email.trim().isEmpty() || !email.contains("@")) {
+            return false;
+        }
+        if (password == null || password.trim().isEmpty()) {
             return false;
         }
         if (nroEmpleado <= 0) {
@@ -375,7 +384,7 @@ public class ControladorFachada implements IControladorFachada {
         }
         
         // Crear el bibliotecario
-        Bibliotecario bibliotecario = new Bibliotecario(nombre, email, nroEmpleado);
+        Bibliotecario bibliotecario = new Bibliotecario(nombre, email, password, nroEmpleado);
         manejadorUsuario.guardarUsuario(bibliotecario);
         
         System.out.println("Bibliotecario creado: " + bibliotecario.getNombre() + " - " + bibliotecario.getEmail() + " - Nro. Empleado: " + bibliotecario.getNroEmpleado());
@@ -1190,6 +1199,45 @@ public class ControladorFachada implements IControladorFachada {
                 return fecha1.getDia() < fecha2.getDia();
             }
         }
+    }
+    
+    // ===== MÉTODOS DE AUTENTICACIÓN =====
+    
+    @Override
+    public Usuario autenticarUsuario(String email, String password) {
+        if (email == null || email.trim().isEmpty()) {
+            System.out.println("❌ Error: Email no puede estar vacío");
+            return null;
+        }
+        if (password == null || password.trim().isEmpty()) {
+            System.out.println("❌ Error: Contraseña no puede estar vacía");
+            return null;
+        }
+        
+        Usuario usuario = manejadorUsuario.obtenerUsuarioPorEmail(email);
+        if (usuario != null && usuario.getPassword().equals(password)) {
+            System.out.println("✅ Usuario autenticado exitosamente: " + usuario.getNombre() + " (" + usuario.getEmail() + ")");
+            return usuario;
+        } else {
+            System.out.println("❌ Error: Credenciales incorrectas para el email: " + email);
+            return null;
+        }
+    }
+    
+    @Override
+    public boolean esLector(Usuario usuario) {
+        if (usuario == null) {
+            return false;
+        }
+        return usuario instanceof Lector;
+    }
+    
+    @Override
+    public boolean esBibliotecario(Usuario usuario) {
+        if (usuario == null) {
+            return false;
+        }
+        return usuario instanceof Bibliotecario;
     }
     
 }

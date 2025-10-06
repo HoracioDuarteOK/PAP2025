@@ -17,8 +17,8 @@ public class Bibliotecario extends Usuario {
         super();
     }
     
-    public Bibliotecario(String nombre, String email, int nroEmpleado) {
-        super(nombre, email);
+    public Bibliotecario(String nombre, String email, String password, int nroEmpleado) {
+        super(nombre, email, password);
         this.nroEmpleado = nroEmpleado;
     }
     
