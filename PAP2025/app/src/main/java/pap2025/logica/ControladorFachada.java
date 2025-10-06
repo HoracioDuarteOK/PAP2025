@@ -811,19 +811,19 @@ public class ControladorFachada implements IControladorFachada {
                                       java.time.LocalDate.now().getYear());
         
         if (esFechaAnterior(fechaDevolucion, fechaHoy)) {
-            System.out.println("❌ Error: La fecha de devolución no puede ser anterior al día de hoy");
-            System.out.println("   📅 Fecha de devolución ingresada: " + formatearFecha(fechaDevolucion));
-            System.out.println("   📅 Fecha actual: " + formatearFecha(fechaHoy));
-            System.out.println("   ⚠️  La fecha de devolución debe ser igual o posterior al día de hoy");
+            System.out.println("Error: La fecha de devolucion no puede ser anterior al dia de hoy");
+            System.out.println("   Fecha de devolucion ingresada: " + formatearFecha(fechaDevolucion));
+            System.out.println("   Fecha actual: " + formatearFecha(fechaHoy));
+            System.out.println("   La fecha de devolucion debe ser igual o posterior al dia de hoy");
             return null;
         }
         
         // Verificar que el material esté disponible
         if (!estaMaterialDisponible(material)) {
-            System.out.println("❌ Error: El material no está disponible para préstamo");
-            System.out.println("   📚 Material: " + (material instanceof Libro ? ((Libro) material).getTitulo() : 
+            System.out.println("Error: El material no esta disponible para prestamo");
+            System.out.println("   Material: " + (material instanceof Libro ? ((Libro) material).getTitulo() : 
                                                 material instanceof ArtEspeciales ? ((ArtEspeciales) material).getDescripcion() : "Material ID: " + material.getId()));
-            System.out.println("   ⚠️  El material ya está siendo utilizado en otro préstamo activo");
+            System.out.println("   El material ya esta siendo utilizado en otro prestamo activo");
             return null;
         }
         
@@ -837,12 +837,12 @@ public class ControladorFachada implements IControladorFachada {
         manejadorPrestamo.guardarPrestamo(prestamo);
         
         System.out.println("✅ Préstamo creado exitosamente:");
-        System.out.println("   📚 Material: " + (material instanceof Libro ? ((Libro) material).getTitulo() : 
+        System.out.println("   Material: " + (material instanceof Libro ? ((Libro) material).getTitulo() : 
                                                 material instanceof ArtEspeciales ? ((ArtEspeciales) material).getDescripcion() : "Material ID: " + material.getId()));
-        System.out.println("   👤 Lector: " + lector.getNombre() + " (" + lector.getEmail() + ")");
-        System.out.println("   🏢 Bibliotecario: " + bibliotecario.getNombre() + " (Nro. Empleado: " + bibliotecario.getNroEmpleado() + ")");
-        System.out.println("   📅 Fecha Solicitud: " + fechaSolicitada);
-        System.out.println("   📅 Fecha Devolución: " + fechaDevolucion);
+        System.out.println("   Lector: " + lector.getNombre() + " (" + lector.getEmail() + ")");
+        System.out.println("   Bibliotecario: " + bibliotecario.getNombre() + " (Nro. Empleado: " + bibliotecario.getNroEmpleado() + ")");
+        System.out.println("   Fecha Solicitud: " + fechaSolicitada);
+        System.out.println("   Fecha Devolucion: " + fechaDevolucion);
         System.out.println("   🆔 ID Préstamo: " + idPrestamo);
         
         return idPrestamo;

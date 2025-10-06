@@ -34,6 +34,11 @@ dependencies {
     
     // Hibernate Connection Pool (C3P0)
     implementation 'org.hibernate:hibernate-c3p0:5.6.15.Final'
+    
+    // JAX-WS para servicios web
+    implementation 'javax.xml.ws:jaxws-api:2.3.1'
+    implementation 'com.sun.xml.ws:jaxws-rt:2.3.5'
+    implementation 'javax.jws:javax.jws-api:1.1'
 }
 
 application {
