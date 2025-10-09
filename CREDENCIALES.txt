@@ -1,0 +1,85 @@
+╔══════════════════════════════════════════════════════════╗
+║         CREDENCIALES DE ACCESO - BIBLIOTECA              ║
+╚══════════════════════════════════════════════════════════╝
+
+🔐 USUARIOS CON CONTRASEÑAS
+
+═══════════════════════════════════════════════════════════
+📚 BIBLIOTECARIOS
+═══════════════════════════════════════════════════════════
+
+1. Administrador
+   Email: admin@biblioteca.com
+   Password: admin123
+   Rol: Bibliotecario Principal
+
+2. María González
+   Email: maria@biblioteca.com
+   Password: maria123
+   Rol: Bibliotecario
+
+3. Carlos López
+   Email: carlos@biblioteca.com
+   Password: carlos123
+   Rol: Bibliotecario
+
+═══════════════════════════════════════════════════════════
+👥 LECTORES
+═══════════════════════════════════════════════════════════
+
+1. Juan Pérez
+   Email: juan@email.com
+   Password: juan123
+   Zona: BIBLIOTECA_CENTRAL
+
+2. Ana Rodríguez
+   Email: ana@email.com
+   Password: ana123
+   Zona: SUCURSAL_ESTE
+
+3. Pedro Silva
+   Email: pedro@email.com
+   Password: pedro123
+   Zona: SUCURSAL_OESTE
+
+4. Lucía Fernández
+   Email: lucia@email.com
+   Password: lucia123
+   Zona: BIBLIOTECA_CENTRAL
+
+5. Miguel Torres
+   Email: miguel@email.com
+   Password: miguel123
+   Zona: SUCURSAL_ESTE
+
+═══════════════════════════════════════════════════════════
+📋 INSTRUCCIONES
+═══════════════════════════════════════════════════════════
+
+1. Ejecuta el script SQL en pgAdmin:
+   - Abre pgAdmin
+   - Conéctate a base de datos "pap2025"
+   - Query Tool → Abrir archivo: agregar_passwords.sql
+   - Ejecutar (F5)
+
+2. Inicia el servidor:
+   ./gradlew app:completeWebServer
+
+3. Accede:
+   http://localhost:8080
+
+4. Inicia sesión con cualquier email + password de arriba
+
+═══════════════════════════════════════════════════════════
+✅ SEGURIDAD IMPLEMENTADA
+═══════════════════════════════════════════════════════════
+
+✅ Login requiere email Y contraseña
+✅ Validación de credenciales en servidor
+✅ Mensajes de error si credenciales incorrectas
+✅ Contraseñas almacenadas en base de datos
+✅ Sistema de sesiones seguro (HttpOnly cookies)
+
+NOTA: Para producción se debería usar hash (bcrypt, SHA-256)
+      pero para el proyecto académico esto es suficiente.
+
