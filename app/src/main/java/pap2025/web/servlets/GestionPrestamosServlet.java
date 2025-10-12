@@ -45,8 +45,38 @@ public class GestionPrestamosServlet extends HttpServlet {
         
         try {
             if ("bibliotecario".equals(tipoUsuario)) {
-                // Vista de bibliotecario - todos los préstamos
-                List<Prestamo> prestamos = PersistenciaHibernate.obtenerTodosLosPrestamos();
+                // Vista de bibliotecario
+                List<Prestamo> prestamos;
+                
+                // Verificar si hay filtro por lector (Funcionalidad Opcional)
+                String emailLectorFiltro = request.getParameter("emailLector");
+                
+                // Verificar si hay filtro por bibliotecario (Funcionalidad Opcional)
+                String emailBibliotecarioFiltro = request.getParameter("emailBibliotecario");
+                String misPrestamos = request.getParameter("misPrestamos");
+                
+                if (emailLectorFiltro != null && !emailLectorFiltro.isEmpty()) {
+                    // Filtrar préstamos por lector específico
+                    prestamos = PersistenciaHibernate.obtenerPrestamosPorLector(emailLectorFiltro);
+                    System.out.println("🔍 Filtrando préstamos del lector: " + emailLectorFiltro);
+                    System.out.println("   Total préstamos encontrados: " + prestamos.size());
+                } else if (emailBibliotecarioFiltro != null && !emailBibliotecarioFiltro.isEmpty()) {
+                    // Filtrar préstamos por bibliotecario específico
+                    prestamos = PersistenciaHibernate.obtenerPrestamosPorBibliotecario(emailBibliotecarioFiltro);
+                    System.out.println("🔍 Filtrando préstamos del bibliotecario: " + emailBibliotecarioFiltro);
+                    System.out.println("   Total préstamos encontrados: " + prestamos.size());
+                } else if ("true".equals(misPrestamos)) {
+                    // Ver solo los préstamos gestionados por el bibliotecario actual
+                    String emailBibliotecario = (String) session.getAttribute("email");
+                    prestamos = PersistenciaHibernate.obtenerPrestamosPorBibliotecario(emailBibliotecario);
+                    System.out.println("🔍 Filtrando MIS préstamos: " + emailBibliotecario);
+                    System.out.println("   Total préstamos encontrados: " + prestamos.size());
+                    request.setAttribute("misPrestamosActivo", true);
+                } else {
+                    // Obtener todos los préstamos
+                    prestamos = PersistenciaHibernate.obtenerTodosLosPrestamos();
+                }
+                
                 List<Lector> lectores = PersistenciaHibernate.obtenerTodosLosLectores();
                 List<Material> materiales = PersistenciaHibernate.obtenerTodosLosMateriales();
                 List<Bibliotecario> bibliotecarios = PersistenciaHibernate.obtenerTodosLosBibliotecarios();

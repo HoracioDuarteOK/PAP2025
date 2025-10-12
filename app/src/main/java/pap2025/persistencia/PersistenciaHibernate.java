@@ -202,6 +202,55 @@ public class PersistenciaHibernate {
         }
     }
     
+    public static List<Material> obtenerMaterialesPorRangoFechas(int diaInicio, int mesInicio, int anioInicio,
+                                                                  int diaFin, int mesFin, int anioFin) {
+        Session session = ConfiguracionBD.getSessionFactory().openSession();
+        try {
+            // Convertir fechas a formato numérico comparable: AAAAMMDD
+            // Por ejemplo: 2024-03-15 -> 20240315
+            int fechaInicioNum = anioInicio * 10000 + mesInicio * 100 + diaInicio;
+            int fechaFinNum = anioFin * 10000 + mesFin * 100 + diaFin;
+            
+            System.out.println("🔍 DEBUG Filtro de fechas:");
+            System.out.println("   Fecha inicio: " + diaInicio + "/" + mesInicio + "/" + anioInicio + " -> " + fechaInicioNum);
+            System.out.println("   Fecha fin: " + diaFin + "/" + mesFin + "/" + anioFin + " -> " + fechaFinNum);
+            
+            // Obtener todos los materiales usando la misma sesión
+            Query<Material> query = session.createQuery("FROM Material", Material.class);
+            List<Material> todosMateriales = query.list();
+            
+            System.out.println("   Total materiales en BD: " + todosMateriales.size());
+            
+            List<Material> materialesFiltrados = new ArrayList<>();
+            
+            for (Material material : todosMateriales) {
+                if (material.getFechaIngreso() != null) {
+                    int fechaMaterialNum = material.getFechaIngreso().getAnio() * 10000 + 
+                                          material.getFechaIngreso().getMes() * 100 + 
+                                          material.getFechaIngreso().getDia();
+                    
+                    System.out.println("   Material ID " + material.getId() + ": " + 
+                                      material.getFechaIngreso().getDia() + "/" + 
+                                      material.getFechaIngreso().getMes() + "/" + 
+                                      material.getFechaIngreso().getAnio() + " -> " + fechaMaterialNum);
+                    
+                    if (fechaMaterialNum >= fechaInicioNum && fechaMaterialNum <= fechaFinNum) {
+                        materialesFiltrados.add(material);
+                        System.out.println("      ✅ INCLUIDO en el filtro");
+                    } else {
+                        System.out.println("      ❌ EXCLUIDO del filtro");
+                    }
+                }
+            }
+            
+            System.out.println("   Materiales filtrados: " + materialesFiltrados.size());
+            
+            return materialesFiltrados;
+        } finally {
+            session.close();
+        }
+    }
+    
     // ===== MÉTODOS PARA PRÉSTAMOS =====
     
     public static void guardarPrestamo(Prestamo prestamo) {
@@ -310,7 +359,11 @@ public class PersistenciaHibernate {
         Session session = ConfiguracionBD.getSessionFactory().openSession();
         try {
             Query<Prestamo> query = session.createQuery(
-                "FROM Prestamo p JOIN FETCH p.bibliotecario b WHERE b.email = :email", Prestamo.class);
+                "SELECT DISTINCT p FROM Prestamo p " +
+                "LEFT JOIN FETCH p.material " +
+                "LEFT JOIN FETCH p.lector " +
+                "LEFT JOIN FETCH p.bibliotecario b " +
+                "WHERE b.email = :email", Prestamo.class);
             query.setParameter("email", emailBibliotecario);
             return query.list();
         } finally {

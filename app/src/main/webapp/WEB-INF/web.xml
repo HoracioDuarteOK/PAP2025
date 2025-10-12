@@ -148,5 +148,32 @@
         <url-pattern>/ws/biblioteca</url-pattern>
     </servlet-mapping>
     
+    <servlet>
+        <servlet-name>ActualizarPrestamoServlet</servlet-name>
+        <servlet-class>pap2025.web.servlets.ActualizarPrestamoServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ActualizarPrestamoServlet</servlet-name>
+        <url-pattern>/app/actualizar-prestamo</url-pattern>
+    </servlet-mapping>
+    
+    <servlet>
+        <servlet-name>ReportesPorZonaServlet</servlet-name>
+        <servlet-class>pap2025.web.servlets.ReportesPorZonaServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ReportesPorZonaServlet</servlet-name>
+        <url-pattern>/app/reportes-zona</url-pattern>
+    </servlet-mapping>
+    
+    <servlet>
+        <servlet-name>MaterialesPendientesServlet</servlet-name>
+        <servlet-class>pap2025.web.servlets.MaterialesPendientesServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>MaterialesPendientesServlet</servlet-name>
+        <url-pattern>/app/materiales-pendientes</url-pattern>
+    </servlet-mapping>
+    
 </web-app>
 

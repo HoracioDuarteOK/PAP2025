@@ -203,18 +203,6 @@
                     </button>
                 </div>
             </form>
-            
-            <div class="text-center">
-                <small class="text-muted">
-                    <i class="fas fa-info-circle"></i> 
-                    El sistema identifica automáticamente si eres bibliotecario o lector
-                </small>
-                <div class="mt-3">
-                    <a href="${pageContext.request.contextPath}/soap-info.jsp" class="text-muted" style="text-decoration: none;">
-                        <i class="fas fa-globe"></i> Ver Servicios SOAP Web Services
-                    </a>
-                </div>
-            </div>
         </div>
         
         <!-- Info Side -->

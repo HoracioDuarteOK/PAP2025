@@ -40,8 +40,38 @@ public class GestionMaterialesServlet extends HttpServlet {
         }
         
         try {
-            // Obtener todos los materiales
-            List<Material> materiales = PersistenciaHibernate.obtenerTodosLosMateriales();
+            List<Material> materiales;
+            
+            // Verificar si hay filtro por fechas
+            String fechaInicio = request.getParameter("fechaInicio");
+            String fechaFin = request.getParameter("fechaFin");
+            
+            if (fechaInicio != null && fechaFin != null && !fechaInicio.isEmpty() && !fechaFin.isEmpty()) {
+                // Parsear fechas (formato: YYYY-MM-DD)
+                String[] partsInicio = fechaInicio.split("-");
+                String[] partsFin = fechaFin.split("-");
+                
+                int anioInicio = Integer.parseInt(partsInicio[0]);
+                int mesInicio = Integer.parseInt(partsInicio[1]);
+                int diaInicio = Integer.parseInt(partsInicio[2]);
+                
+                int anioFin = Integer.parseInt(partsFin[0]);
+                int mesFin = Integer.parseInt(partsFin[1]);
+                int diaFin = Integer.parseInt(partsFin[2]);
+                
+                // Obtener materiales filtrados
+                materiales = PersistenciaHibernate.obtenerMaterialesPorRangoFechas(
+                    diaInicio, mesInicio, anioInicio,
+                    diaFin, mesFin, anioFin
+                );
+                
+                request.setAttribute("fechaInicio", fechaInicio);
+                request.setAttribute("fechaFin", fechaFin);
+                request.setAttribute("filtroActivo", true);
+            } else {
+                // Obtener todos los materiales
+                materiales = PersistenciaHibernate.obtenerTodosLosMateriales();
+            }
             
             request.setAttribute("materiales", materiales);
             

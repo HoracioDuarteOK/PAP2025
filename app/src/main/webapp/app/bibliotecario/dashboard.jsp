@@ -96,6 +96,14 @@
                                 <i class="fas fa-exchange-alt"></i> Gestión de Préstamos
                             </a>
                             <hr class="text-white-50">
+                            <small class="text-white-50 px-3 mb-2 d-block">REPORTES</small>
+                            <a class="nav-link" href="${pageContext.request.contextPath}/app/reportes-zona">
+                                <i class="fas fa-map-marked-alt"></i> Reporte por Zona
+                            </a>
+                            <a class="nav-link" href="${pageContext.request.contextPath}/app/materiales-pendientes">
+                                <i class="fas fa-exclamation-triangle"></i> Materiales Pendientes
+                            </a>
+                            <hr class="text-white-50">
                             <a class="nav-link" href="${pageContext.request.contextPath}/logout">
                                 <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                             </a>
